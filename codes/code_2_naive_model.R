@@ -26,7 +26,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 
 ###################################
 #                                 #
-#            NAIVE MODEL          #
+#        NAIVE MODEL (ARTIST)     #
 #                                 #
 ###################################
 
@@ -68,3 +68,49 @@ for (i in 1:nrow(data.test)) {
 
 # creating submission
 submit(naive.pred, data = data.test, folder = subm.folder, file = "naive_artist.csv")
+
+
+
+###################################
+#                                 #
+#        NAIVE MODEL (GENRE)      #
+#                                 #
+###################################
+
+# loading data sets
+load(file.path(data.folder, "data_train.Rda"))
+load(file.path(data.folder, "data_test.Rda"))
+
+# keeping the genre data
+data.train <- data.train[, c("user_id", "genre_id", "sample_id", "is_listened")]
+data.test  <- data.test[,  c("user_id", "genre_id", "sample_id", "is_listened")]
+
+# dropping skipped tracks
+data.train <- data.train[data.train$is_listened == 1, ]
+
+# empty prediction vector
+naive.pred <- rep(NA, nrow(data.test))
+
+# checking if the artist has already been played
+for (i in 1:nrow(data.test)) {
+  
+  # displaying observation number
+  print(paste0(i, "/", nrow(data.test)))
+  
+  # extracting user and genre
+  user  <- data.test$user_id[i]
+  genre <- data.test$genre_id[i]
+  
+  # extracting artists played by user
+  history <- data.train$genre_id[data.train$user_id == user]
+  
+  # checking if this artist has already been played
+  if (genre %in% history) {
+    naive.pred[i] <- table(history)[genre]/sum(table(history))
+  }else{
+    naive.pred[i] <- 0
+  }
+}
+
+# creating submission
+submit(naive.pred, data = data.test, folder = subm.folder, file = "naive_genre.csv")
