@@ -31,7 +31,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 #                                 #
 ###################################
 
-########## 1. LOADING THE DATA
+##### 1. LOADING THE DATA
 
 # loading training data
 data.train <- read.csv2(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
@@ -45,7 +45,7 @@ data.train$sample_id  <- NA
 data.full <- rbind(data.train, data.test)
 
 
-########## 2. CONVERTING VARIABLES
+##### 2. CONVERTING VARIABLES
 
 # converting IDs
 data.full$sample_id <- as.factor(data.full$sample_id)
