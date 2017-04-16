@@ -66,10 +66,10 @@ data.test$artist_ratio <- merge(data.test[, c("sample_id", "artist_id")], artist
 data.test$song_ratio   <- merge(data.test[, c("sample_id", "media_id")],  song.ratio,   sort = F, all.x = T)$is_listened
 
 # imputing NAs with means
-data.test$user_ratio[is.na(data.test$user_ratio)]     <- mean(data.test$user_ratio, na.rm = T)
-data.test$genre_ratio[is.na(data.test$genre_ratio)]   <- mean(data.test$genre_ratio, na.rm = T)
+data.test$user_ratio[is.na(data.test$user_ratio)]     <- mean(data.test$user_ratio,   na.rm = T)
+data.test$genre_ratio[is.na(data.test$genre_ratio)]   <- mean(data.test$genre_ratio,  na.rm = T)
 data.test$artist_ratio[is.na(data.test$artist_ratio)] <- mean(data.test$artist_ratio, na.rm = T)
-data.test$song_ratio[is.na(data.test$song_ratio)]     <- mean(data.test$song_ratio, na.rm = T)
+data.test$song_ratio[is.na(data.test$song_ratio)]     <- mean(data.test$song_ratio,   na.rm = T)
 
 # computing average ratio
 data.test$mean_ratio <- (data.test$user_ratio + data.test$genre_ratio + data.test$artist_ratio + data.test$song_ratio)/4
