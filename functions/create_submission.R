@@ -1,4 +1,4 @@
-# finction to submit predictions
+##### function to submit predictions
 submit <- function(prediction, data, folder, file = "test.csv") {
   
   # displaying error messages
