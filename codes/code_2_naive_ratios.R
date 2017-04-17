@@ -25,7 +25,6 @@ library(anytime)
 source(file.path(code.folder, "code_0_helper_functions.R"))
 
 
-
 ###################################
 #                                 #
 #       NAIVE MODEL (RATIOS)      #
@@ -41,41 +40,56 @@ load(file.path(data.folder, "data_test.Rda"))
 # converting variable to numeric
 data.train$is_listened <- as.numeric(data.train$is_listened)
 
-
-##### 2. COMPUTING RATIOS
-
-# computing play/skip ratio by user
-user.ratio <- aggregate(is_listened ~ user_id, data.train, mean)
-
-# computing play/skip ratio by genre
-genre.ratio <- aggregate(is_listened ~ genre_id, data.train, mean)
-
-# computing play/skip ratio by artist
-artist.ratio <- aggregate(is_listened ~ artist_id, data.train, mean)
-
-# computing play/skip ratio by song
-song.ratio <- aggregate(is_listened ~ media_id, data.train, mean)
+# adding simple counter
+data.train$count <- 1
 
 
-##### 3. SAVING TO TESTING DATA
+##### 2. COMPUTING VARIABLES
 
-# saving all ratios
-data.test$user_ratio   <- merge(data.test[, c("sample_id", "user_id")],   user.ratio,   sort = F, all.x = T)$is_listened
-data.test$genre_ratio  <- merge(data.test[, c("sample_id", "genre_id")],  genre.ratio,  sort = F, all.x = T)$is_listened
-data.test$artist_ratio <- merge(data.test[, c("sample_id", "artist_id")], artist.ratio, sort = F, all.x = T)$is_listened
-data.test$song_ratio   <- merge(data.test[, c("sample_id", "media_id")],  song.ratio,   sort = F, all.x = T)$is_listened
+# computing historical play/skip ratios
+user.ratio   <- aggregate(is_listened ~ user_id,             data.train, mean)
+genre.ratio  <- aggregate(is_listened ~ user_id + genre_id,  data.train, mean)
+artist.ratio <- aggregate(is_listened ~ user_id + artist_id, data.train, mean)
+song.ratio   <- aggregate(is_listened ~ user_id + media_id,  data.train, mean)
 
-# imputing NAs with means
-data.test$user_ratio[is.na(data.test$user_ratio)]     <- mean(data.test$user_ratio,   na.rm = T)
-data.test$genre_ratio[is.na(data.test$genre_ratio)]   <- mean(data.test$genre_ratio,  na.rm = T)
-data.test$artist_ratio[is.na(data.test$artist_ratio)] <- mean(data.test$artist_ratio, na.rm = T)
-data.test$song_ratio[is.na(data.test$song_ratio)]     <- mean(data.test$song_ratio,   na.rm = T)
+# computing total appearance counts
+genre.count  <- aggregate(count ~ user_id + genre_id,  data.train, sum)
+artist.count <- aggregate(count ~ user_id + artist_id, data.train, sum)
+song.count   <- aggregate(count ~ user_id + media_id,  data.train, sum)
+
+# keeping genre/artist/song data with at least 30 appearances
+genre.count  <- genre.count[genre.count$count   >= 30, ]
+artist.count <- artist.count[artist.count$count >= 30, ]
+song.count   <- song.count[song.count$count     >= 30, ]
+
+# subsetting play/skip ratios
+genre.ratio  <- merge(genre.count,  genre.ratio,  sort = F, all.x = T)
+artist.ratio <- merge(artist.count, artist.ratio, sort = F, all.x = T)
+song.ratio   <- merge(song.count,   song.ratio,   sort = F, all.x = T)
+
+
+##### 3. CREATING PREDICTIONS
+
+# saving simple ratios
+data.test$user_ratio   <- merge(data.test[, c("sample_id", "user_id")],              user.ratio,   sort = F, all.x = T)$is_listened
+data.test$genre_ratio  <- merge(data.test[, c("sample_id", "user_id", "genre_id")],  genre.ratio,  sort = F, all.x = T)$is_listened
+data.test$artist_ratio <- merge(data.test[, c("sample_id", "user_id", "artist_id")], artist.ratio, sort = F, all.x = T)$is_listened
+data.test$song_ratio   <- merge(data.test[, c("sample_id", "user_id", "media_id")],  song.ratio,   sort = F, all.x = T)$is_listened
+
+# displaying resulted ratios
+summary(data.test[, c("user_ratio", "genre_ratio", "artist_ratio", "song_ratio")])
+cor(data.test[, c("user_ratio", "genre_ratio", "artist_ratio", "song_ratio")], use = "complete")
+
+# imputing NAs with user ratio
+data.test$genre_ratio[is.na(data.test$genre_ratio)]   <- data.test$user_ratio[is.na(data.test$genre_ratio)]
+data.test$artist_ratio[is.na(data.test$artist_ratio)] <- data.test$user_ratio[is.na(data.test$artist_ratio)]
+data.test$song_ratio[is.na(data.test$song_ratio)]     <- data.test$user_ratio[is.na(data.test$song_ratio)]
 
 # computing average ratio
 data.test$mean_ratio <- (data.test$user_ratio + data.test$genre_ratio + data.test$artist_ratio + data.test$song_ratio)/4
 summary(data.test$mean_ratio)
 
-# creating submission
+# creating submissions
 submit(data.test$user_ratio,   data = data.test, folder = subm.folder, file = "naive_ratio_user.csv")
 submit(data.test$genre_ratio,  data = data.test, folder = subm.folder, file = "naive_ratio_genre.csv")
 submit(data.test$artist_ratio, data = data.test, folder = subm.folder, file = "naive_ratio_artist.csv")

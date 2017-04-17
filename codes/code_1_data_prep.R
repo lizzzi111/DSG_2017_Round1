@@ -25,7 +25,6 @@ library(anytime)
 source(file.path(code.folder, "code_0_helper_functions.R"))
 
 
-
 ###################################
 #                                 #
 #         DATA PREPARATION        #
