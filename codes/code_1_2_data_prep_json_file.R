@@ -9,7 +9,7 @@ rm(list = ls())
 
 # setting work directory
 work.folder <- "N:/DSG2017/DSG_2017"
-#work.folder <- "C:/Users/kozodoin3.hub/Desktop/DSG_2017-master"
+#work.folder <- "C:/Users/kozodoin3.hub/Desktop/DSG_2017"
 setwd(work.folder)
 
 # setting inner folders
