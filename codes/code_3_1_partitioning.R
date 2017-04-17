@@ -37,7 +37,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 # partitionin ratio
 ratio <- 0.9
 
-# loading data sets
+# loading data set
 load(file.path(data.folder, "data_train.Rda"))
 
 # extracting user IDs

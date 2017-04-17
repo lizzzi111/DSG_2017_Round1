@@ -19,9 +19,7 @@ func.folder <- "functions"
 subm.folder <- "submissions"
 
 # loading libraries
-library(anytime)
 library(caret)
-library(randomForest)
 library(xgboost)
 
 # loading functions

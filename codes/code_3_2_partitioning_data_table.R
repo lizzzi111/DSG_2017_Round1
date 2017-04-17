@@ -1,5 +1,41 @@
-# library
+###################################
+#                                 #
+#             SETTINGS            #
+#                                 #
+###################################
+
+# clearing the memory
+rm(list = ls())
+
+# setting work directory
+work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
+#work.folder <- "C:/Users/kozodoin3.hub/Desktop/DSG_2017"
+setwd(work.folder)
+
+# setting inner folders
+code.folder <- "codes"
+data.folder <- "data"
+func.folder <- "functions"
+subm.folder <- "submissions"
+
+# loading libraries
 library(data.table)
+
+# loading functions
+source(file.path(code.folder, "code_0_helper_functions.R"))
+
+
+###################################
+#                                 #
+#         DATA PARTITIONING       #
+#                                 #
+###################################
+
+# loading data set
+load(file.path(data.folder, "data_train.Rda"))
+
+# 1) Selecting first 90% history of each user as a training sample
+# 2) Selecting last 10% history of each user as a validation sample
 
 dt <- as.data.table(data.train)
 dt[,user_listened:=.N, by=user_id]
