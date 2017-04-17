@@ -38,7 +38,7 @@ load(file.path(data.folder, "data_train.Rda"))
 load(file.path(data.folder, "data_test.Rda"))
 
 # converting variable to numeric
-data.train$is_listened <- as.numeric(data.train$is_listened)
+data.train$is_listened <- as.numeric(data.train$is_listened) - 1
 
 # adding simple counter
 data.train$count <- 1

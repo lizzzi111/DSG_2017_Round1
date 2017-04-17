@@ -39,7 +39,6 @@ ratio <- 0.9
 
 # loading data sets
 load(file.path(data.folder, "data_train.Rda"))
-load(file.path(data.folder, "data_test.Rda"))
 
 # extracting user IDs
 users <- levels(data.train$user_id)

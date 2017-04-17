@@ -60,6 +60,7 @@ data.full$release_date <- as.Date(as.character(data.full$release_date), "%Y%m%d"
 data.full$ts_listen <- anytime(data.full$ts_listen, asUTC = T)
 
 # converting other factors
+data.full$is_listened     <- as.factor(data.full$is_listened)
 data.full$context_type    <- as.factor(data.full$context_type)
 data.full$platform_name   <- as.factor(data.full$platform_name)
 data.full$platform_family <- as.factor(data.full$platform_family)
