@@ -4,7 +4,7 @@ library(data.table)
 dt <- as.data.table(data.train)
 dt[,user_listened:=.N, by=user_id]
 sam <- dt[user_listened>=100]
-sam[order(ts_listen),.SD, by=user_id]
+sam <- sam[order(ts_listen),.SD, by=user_id]
 
 #sam_train <- sam[, sample(.N, length(.N)*0.1), by=user_id]
 sam[, for_val:=round(mean(user_listened)*0.1), by=user_id]
