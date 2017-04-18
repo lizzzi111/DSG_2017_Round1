@@ -43,10 +43,9 @@ load(file.path(data.folder, "data_test.Rda"))
 load(file.path(data.folder, "sample_train.Rda"))
 load(file.path(data.folder, "sample_valid.Rda"))
 
-# computing features [takes 10-15 minutes]
+# computing features [takes 20-30 minutes]
 sample.valid <- compute_features(sample.train, sample.valid)
-data.test <- compute_features(data.train, data.test)
-
+data.test    <- compute_features(data.train,   data.test)
 
 
 ##### 2. MODEL ESTIMATIONS
@@ -58,16 +57,16 @@ equation_num <- as.formula(is_listened ~ ratio_per_user +
                               total_song_plays + total_album_plays + total_artist_plays + total_genre_plays + 
                               total_song_skips + total_album_skips + total_artist_skips + total_genre_skips)
 
-# training RF models
-rf.model <- randomForest(equation_num, data = sample.valid, ntree = 100, importance = T)
+# training RF model [TAKES TIME]
+rf.model <- randomForest(equation_num, data = sample.valid, ntree = 500, importance = T)
 rf.model
 
-# displaying variable importance
+# displaying var. importance
 varImpPlot(rf.model, type = 1)
 
-# training XGB models with CV-based tuning 
+# training XGB models with tuning [TAKES TIME] 
 control  <- trainControl(method = "cv", number = 4)
-xg.model <- train(equation, data = sample.valid, method = "xgbLinear", trControl = control)
+xg.model <- train(equation_num, data = sample.valid, method = "xgbLinear", trControl = control)
 
 
 ##### 3. PRODUCING PREDICTIONS
