@@ -33,21 +33,28 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 
 # loading data sets
 load(file.path(data.folder, "data_train.Rda"))
+data.train <- data.table(data.train)
 
 # keeping only played tracks
-data.train <- data.train[data.train$is_listened == 1, ]
+# JO: rather not. it doesn't matter for the sum, but we can do a 'rating' using the mean
+#data.train <- data.train[data.train$is_listened == 1, ]
 #data.train <- data.train[1:1000, ]
 
 # converting variable to numeric
-data.train$is_listened <- as.numeric(data.train$is_listened)
+# careful when transforming factors back to numeric, is.numeric doesn't work properly (-> 1, 2)
+data.train[, is_listened := as.numeric(levels(is_listened))[is_listened]]
 
 # computing play count by user-artist
-user.artist.count <- aggregate(is_listened ~ user_id + artist_id, data.train, sum)
+user.artist.count <- data.train[, list( 'count' = sum(is_listened, na.rm = TRUE)), by = c("user_id", "artist_id")]
+user.artist.mean <- data.train[, list( 'mean' = mean(is_listened, na.rm = TRUE)), by = c("user_id", "artist_id")]
+#user.artist.count <- aggregate(is_listened ~ user_id + artist_id, data.train, sum)
 
 # droping factor levels
 user.artist.count$artist_id <- droplevels(user.artist.count$artist_id)
 
 # reshaping the data
+# JO: This gives a matrix with 1.4 * 10^9, which is too big.
+#     I'll check how to do collaborative filtering with data of this size
 history <- reshape(user.artist.count, idvar = "user_id", timevar = "artist_id", direction = "wide")
 history[is.na(history)] <- 0
 history <- apply(history, 2, as.numeric)
@@ -67,6 +74,7 @@ getCosine <- function(x,y) {
   return(this.cosine)
 }
 
+# JO: The resulting matrix has 100 million entries, that's too much
 # loop through the rows
 for (i in 1:nrow(history.ubs)) {
   for (j in 1:nrow(history.ubs)) {

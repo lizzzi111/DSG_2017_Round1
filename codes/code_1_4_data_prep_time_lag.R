@@ -31,14 +31,17 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 load(file.path(data.folder, "data_train.Rda"))
 
 dt <- as.data.table(data.train)
-dt <- dt[order(ts_listen),.SD, by=user_id]
+# Order data by user_id and ts_listen
+# Using set* functions is faster
+setorder(dt, user_id, ts_listen)
+#dt <- dt[order(ts_listen),.SD, by=user_id]
 
-dt[,time_lag:=c(NA, difftime(tail(ts_listen,-1),head(ts_listen,-1), units = "secs")), by=user_id]
-dt[is.na(time_lag),time_lag:=0]
+dt[,time_lag:=c(NA, difftime(tail(ts_listen,-1), head(ts_listen,-1), units = "secs")), by = user_id]
+dt[is.na(time_lag),time_lag := 0]
 
 #let's look at the most typical time lags
 #summary(dt[time_lag>0&time_lag<167,time_lag])
-#hist(dt[time_lag>0&time_lag<15,time_lag])
+hist(dt[time_lag>0 & time_lag<30, time_lag])
 
 #let's take more than 15 mins as a start for a new session
 # 15 mins = 900 sec

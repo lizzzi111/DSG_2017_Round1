@@ -84,14 +84,19 @@ dt[,songs_by_the_art:=ifelse(songs_by_the_art==1334,1,songs_by_the_art)]
 # this one takes very long, I haven't measured the time exactly, but it took at least an hour. So 
 # if you want to try it yourself, be prepared to wait :)
 # or probably we could make a more efficient version of it with dplyr and mutate
-aggr_info <-as_data_frame(dt)
-aggr_info <- aggr_info %>% 
-  group_by(art_name) %>%
-  mutate(alb_by_art = n_distinct(alb_title)) %>% 
-  ungroup()
 
+# JO: I think this should work and be fast, but haven't tested it on the full data
+dt[, alb_by_art := uniqueN(alb_title), by = art_name]
+dt[alb_by_art == 212, alb_by_art := 1]
+# JO: uncommented the original code below
+#aggr_info <-as_data_frame(dt)
+#aggr_info <- aggr_info %>% 
+#  group_by(art_name) %>%
+#  mutate(alb_by_art = n_distinct(alb_title)) %>% 
+#  ungroup()
+#
 # we get 212 for the missing artist, impute with one
-aggr_info$alb_by_art <- ifelse(aggr_info$alb_by_art==212,1,aggr_info$alb_by_art)
+#aggr_info$alb_by_art <- ifelse(aggr_info$alb_by_art==212,1,aggr_info$alb_by_art)
 
 #what is better to do with albums such as greatest hits, chanson etc -outliers? impute it or leave it as it is
 # the same question for the art_name = "Glee Cast" 
