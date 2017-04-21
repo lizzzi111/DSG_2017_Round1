@@ -6,7 +6,7 @@ compute_features <- function(train, test) {
   # converting to numeric
   train$is_listened <- as.numeric(train$is_listened) - 1
   train$is_skipped  <- 1- train$is_listened
-  
+
   
   ##### 2. FEATURES ON USER LEVEL
   
