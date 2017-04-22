@@ -74,3 +74,13 @@ save(dt, file = file.path(data.folder, "dt_with_session_id.Rda"))
 session_id <- dt$session_id
 # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))
+
+sessionize = function(ts) {
+  delta.t = diff(ts)
+  is.new = c(TRUE, delta.t >= 900)
+  cumsum(is.new)
+}
+sessions = data.train %>%
+  group_by(user_id) %>%
+  arrange(ts_listen) %>%
+  mutate(sessionId = sessionize(ts_listen))
