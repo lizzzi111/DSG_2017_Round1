@@ -60,7 +60,10 @@ compute_features <- function(train, test) {
   user_bad_artists <- merge(user_bad_artists, user_skips_artist, sort = F, all.x = T)
   user_bad_genres  <- merge(user_bad_genres,  user_skips_genre,  sort = F, all.x = T)
   
-  
+  # computing previous song listened
+  previous_media <- train_dt[order(ts_listen),.(is_listened, ts_listen, media_id,previous_media_listened=shift(is_listened)), by=user_id]
+  previous_media[is.na(previous_media_listened), previous_media_listened:=0]
+  previous_media[,previous_media_listened:=as.factor(previous_media_listened)]
   ##### 3. FEATURES ON AGGREGATE LEVEL
   
   # computing aggregate play counts 
@@ -115,6 +118,8 @@ compute_features <- function(train, test) {
   test_dt$user_bad_artist <- merge(test_dt[, c("sample_id", "user_id", "artist_id")], user_bad_artists, sort = F, all.x = T)$is_skipped
   test_dt$user_bad_genre  <- merge(test_dt[, c("sample_id", "user_id", "genre_id")],  user_bad_genres,  sort = F, all.x = T)$is_skipped  
   
+  # saving previous media listened
+  #test_dt$previous_media_listened <- merge(test_dt[, .(user_id,media_id,ts_listen)], previous_media[,.(user_id,ts_listen,media_id,previous_media_listened)], sort = F, all.x = T)
   # creating dummies for new media
   test_dt$user_new_song   <- as.factor(is.na(test_dt$user_song_plays))
   test_dt$user_new_album  <- as.factor(is.na(test_dt$user_album_plays))
