@@ -37,21 +37,42 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 # loading data
 load(file.path(data.folder, "data_train_sessions.Rda"))
 
+# droping first sessions
+sessions <- sessions[sessions$sessionId > 1, ]
+
+# list of users
+user_list <- sort(unique(sessions$user_id))
+
+# setting max sessions per user
+max_sessions <- 5
+
 # the master loop
 data <- data.frame()
-for (user in sort(unique(sessions$user_id), decreasing = T)) {
-  print(paste0("User ", user))
-  for (session in unique(sessions$sessionId[sessions$user_id == user])) {
-    if (session > 1) {
-      print(paste0("User ", user, ", session ", session))
-      
-      train <- sessions[sessions$user_id == user & sessions$sessionId <  session, ]
-      valid <- sessions[sessions$user_id == user & sessions$sessionId == session, ]
-      
-      valid <- compute_features_dt(train, valid)
-      
-      data <- rbind(data, valid)
-    }
+for (user in user_list) {
+  
+  # extracting sessions
+  ses <- unique(sessions$sessionId[sessions$user_id == user])
+
+  # keeping last sessions
+  if (length(ses) > max_sessions) {
+    ses <- ses[(length(ses)-max_sessions+1):length(ses)]
+  }
+
+  # loop for data creation
+  for (s in ses) {
+    
+    # displaying user ans session name
+    print(paste0("User ", user, ", session ", s))
+    
+    # partitioning data 
+    train_full <- sessions[sessions$user_id == user & sessions$sessionId <  s,     ]
+    train_last <- sessions[sessions$user_id == user & sessions$sessionId == (s-1), ]
+    valid      <- sessions[sessions$user_id == user & sessions$sessionId == s,     ]
+   
+    # computing features
+    valid <- compute_features_dt(train_full, valid)
+    valid$ratio_per_user_last <- mean(as.numeric(train_last$is_listened)-1)
+    data <- rbind(data, valid)
   }
 }
 
