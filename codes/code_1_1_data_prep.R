@@ -36,7 +36,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 # loading training data
 data.train <- read.csv2(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
 
-# loading training data
+# loading testing data
 data.test <- read.csv2(file.path(data.folder, "test.csv"), sep = ",", dec = ".", header = T)
 
 # merging data sets
