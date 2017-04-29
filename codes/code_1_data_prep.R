@@ -4,10 +4,12 @@
 #                                 #
 ###################################
 
+# clearing the memory
+rm(list = ls())
+
 # setting work directory
-#work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
-#work.folder <- "C:/Users/kozodoin3.hub/Desktop/DSG_2017"
-#setwd(work.folder)
+work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
+setwd(work.folder)
 
 # setting inner folders
 code.folder <- "codes"
@@ -24,6 +26,7 @@ p_load(data.table, anytime)
 source(file.path(code.folder, "code_0_helper_functions.R"))
 
 
+
 ###################################
 #                                 #
 #         DATA PREPARATION        #
@@ -34,6 +37,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 
 # loading training data
 data.train <- fread(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
+
 # loading testing data
 data.test <- fread(file.path(data.folder, "test.csv"), sep = ",", dec = ".", header = T)
 
@@ -44,6 +48,7 @@ data.test$dataset <- "unknown"
 data.train$dataset <- "train"
 data.full <- rbind(data.train, data.test)
 setkey(data.full, user_id, media_id)
+
 
 ##### 2. CONVERTING VARIABLES
 
@@ -56,22 +61,26 @@ data.full[, (temp) := lapply(.SD, factor), .SDcols = temp]
 data.full[, release_date := as.Date(as.character(data.full$release_date), "%Y%m%d")]
 data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 
-# looking at the data
-#summary(data.full)
 
+
+##### 3. CREATING FEATURES
+
+################
 # Outsource some code to be more flexible
-# Also saves the results , we could reload here if possible instead of doing again
-# Add data from json file, info on song name, album name, artist name
+# Also saves the results, we could reload here if possible instead of doing again
+################
+
+### 3.1. Add data from json file, info on song name, album name, artist name
 if(file.exists(file.path(data.folder, "info_json.rds"))){
   extra_info <- readRDS(file.path(data.folder, "info_json.rds")) 
 }else{
-  source(file.path(code.folder,"code_1_3_data_prep_json_file.R"))
+  source(file.path(code.folder,"code_2_features_json_file.R"))
   saveRDS(extra_info, file = file.path(data.folder, "info_json.Rds"))
 }
 data.full <- merge(data.full, extra_info, by = "media_id", all.x = TRUE)
 
-# Add time related variables
-source(file.path(code.folder,"code_1_4_data_prep_time_lag.R"))
+### 3.2. Add time related variables
+source(file.path(code.folder, "code_2_features_time_related.R"))
 
 # Add data split training/test variable
 #data.full[flow_position == 1 & dataset == 'train', dataset := "test"] # Only 6034 obs..
@@ -79,8 +88,8 @@ source(file.path(code.folder,"code_1_4_data_prep_time_lag.R"))
 # Will move rare users completely to the test set
 data.full[data.full[dataset == 'train',list(index = tail(.I, 10)), by = user_id]$index, dataset := 'test']
 
-# Compute naive skip ratios as features
-source(file.path(code.folder,"code_2_naive_ratios.R"))
+### 3.3. Compute naive skip ratios as features
+source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
 # Make nice IDs for embedding
 
