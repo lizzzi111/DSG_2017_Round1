@@ -33,7 +33,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 #                                 #
 ###################################
 
-##### 1. LOADING THE DATA
+########## 1. LOADING THE DATA
 
 # loading training data
 data.train <- fread(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
@@ -50,7 +50,8 @@ data.full <- rbind(data.train, data.test)
 setkey(data.full, user_id, media_id)
 
 
-##### 2. CONVERTING VARIABLES
+
+########## 2. CONVERTING VARIABLES
 
 # converting factors
 temp <- c("sample_id", "genre_id", "media_id", "album_id", "user_id", "artist_id", "user_gender", "context_type", "platform_name",
@@ -63,14 +64,16 @@ data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 
 
 
-##### 3. CREATING FEATURES
+########## 3. CREATING FEATURES
 
-################
+##### 3.1. FEATURES ON FULL DATA
+
+#################### 
 # Outsource some code to be more flexible
 # Also saves the results, we could reload here if possible instead of doing again
-################
+#################### 
 
-### 3.1. Add data from json file, info on song name, album name, artist name
+### Add data from json file, info on song name, album name, artist name
 if(file.exists(file.path(data.folder, "info_json.rds"))){
   extra_info <- readRDS(file.path(data.folder, "info_json.rds")) 
 }else{
@@ -79,8 +82,12 @@ if(file.exists(file.path(data.folder, "info_json.rds"))){
 }
 data.full <- merge(data.full, extra_info, by = "media_id", all.x = TRUE)
 
-### 3.2. Add time related variables
+### Add time-related variables
 source(file.path(code.folder, "code_2_features_time_related.R"))
+
+
+
+##### 3.2. FEATURES ON PARTITIONED DATA
 
 # Add data split training/test variable
 #data.full[flow_position == 1 & dataset == 'train', dataset := "test"] # Only 6034 obs..
@@ -88,11 +95,18 @@ source(file.path(code.folder, "code_2_features_time_related.R"))
 # Will move rare users completely to the test set
 data.full[data.full[dataset == 'train',list(index = tail(.I, 10)), by = user_id]$index, dataset := 'test']
 
-### 3.3. Compute naive skip ratios as features
+### Compute total plays and skips as features
+source(file.path(code.folder, "code_2_features_total_plays.R"))
+
+### Compute naive skip ratios as features
 source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
-# Make nice IDs for embedding
 
+
+
+##### 4. EXPORTING DATA
+
+# Make nice IDs for embedding
 
 # saving Data
 write.csv(data.full, file.path(data.folder, "data_full.csv"))

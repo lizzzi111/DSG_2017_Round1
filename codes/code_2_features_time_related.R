@@ -36,6 +36,9 @@ data.full[release_date > "2018-01-01", time_diff := NA]
 data.full[is.na(time_diff), time_diff := mean(data.full$time_diff, na.rm = T)]
 #summary(data.full$time_diff)
 
+# Create a factor variable for the hour of the day when the song is played
+data.full[, hours := as.factor(format(as.POSIXct(data.full$ts_listen, format = "%H:%M:%S"),"%H"))]
+
 # # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 # save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))
 # 
