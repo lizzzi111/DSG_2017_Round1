@@ -83,7 +83,9 @@ data.full[data.full[dataset == 'train',list(index = tail(.I, 10)), by = user_id]
 source(file.path(code.folder,"code_2_naive_ratios.R"))
 
 # Make nice IDs for embedding
-
+source(file.path(func.folder, "createEmbeddingID.R"))
+data.full[, c("user_id_embedding", "artist_id_embedding","media_id_embedding", "genre_id_embedding") :=
+            lapply(list(user_id, artist_id, media_id, genre_id), createEmbeddingID)]
 
 # saving Data
 write.csv(data.full, file.path(data.folder, "data_full.csv"))
