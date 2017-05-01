@@ -5,7 +5,7 @@
 ###################################
 
 # clearing the memory
-rm(list = ls())
+#rm(list = ls())
 
 # setting work directory
 #work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
@@ -100,7 +100,7 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 source(file.path(func.folder, "createEmbeddingID.R"))
 trainIdx <- which(data.full$dataset == "train")
 #data.full[, user_id := createEmbeddingID(user_id, trainIdx = trainIdx)]
-idCols <- c("user_id", "artist_id","media_id", "genre_id")
+idCols <- c("user_id", "artist_id","media_id", "genre_id", "context_type")
 data.full[, (idCols) := lapply(.SD, createEmbeddingID, trainIdx = trainIdx),
           .SDcols = idCols]
 
@@ -114,7 +114,7 @@ data.full[, c("platform_name1", "platform_name2", "platform_family1", "platform_
             list(ifelse(platform_name == 1, 1, 0), ifelse(platform_name == 2, 1, 0),
                  ifelse(platform_family == 1, 1, 0), ifelse(platform_family == 2, 1, 0))]
 #source(file.path(func.folder, "code_2_dummy_matrix.R"))
-data.full[, .(platform_name, platform_family, context_type) := NULL]
+data.full[, c("platform_name", "platform_family") := NULL]
 
 # saving Data
 fwrite(data.full, file.path(data.folder, "data_full.csv"))

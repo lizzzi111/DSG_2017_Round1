@@ -12,9 +12,10 @@ createEmbeddingID <- function(x, trainIdx){
   full[is.na(count), count := 0]
   
   full[, ID_embedding := ID_group]
-  full[count <= max(min(count)+2, 10), ID_embedding := -1]
+  full[count <= max(min(count)+2, 3), ID_embedding := -1]
   
-  full[, ID_embedding := .GRP, by = ID_embedding]
+  full[, ID_embedding := GRP, by = ID_embedding]
+  full[, ID_embedding := as.integer(ID_embedding-1)]
   
   return(full$ID_embedding)
 }
