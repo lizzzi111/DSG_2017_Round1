@@ -4,9 +4,11 @@
 #                                 #
 ###################################
 
+# clearing the memory
+rm(list = ls())
+
 # setting work directory
 #work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
-#work.folder <- "C:/Users/kozodoin3.hub/Desktop/DSG_2017"
 #setwd(work.folder)
 
 # setting inner folders
@@ -24,16 +26,18 @@ p_load(data.table, anytime)
 source(file.path(code.folder, "code_0_helper_functions.R"))
 
 
+
 ###################################
 #                                 #
 #         DATA PREPARATION        #
 #                                 #
 ###################################
 
-##### 1. LOADING THE DATA
+########## 1. LOADING THE DATA
 
 # loading training data
 data.train <- fread(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
+
 # loading testing data
 data.test <- fread(file.path(data.folder, "test.csv"), sep = ",", dec = ".", header = T)
 
@@ -45,47 +49,72 @@ data.train$dataset <- "train"
 data.full <- rbind(data.train, data.test)
 setkey(data.full, user_id, media_id)
 
-##### 2. CONVERTING VARIABLES
+########## 2. CONVERTING VARIABLES
 
 # converting factors
-temp <- c("sample_id", "genre_id", "media_id", "album_id", "user_id", "artist_id", "user_gender", "context_type", "platform_name",
-          "platform_family", "listen_type", "is_listened")
+temp <- c("sample_id", "genre_id", "media_id", "album_id", "user_id", "artist_id", "context_type", "platform_name", "platform_family")
 data.full[, (temp) := lapply(.SD, factor), .SDcols = temp]
 
 # converting timestamps
 data.full[, release_date := as.Date(as.character(data.full$release_date), "%Y%m%d")]
 data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 
-# looking at the data
-#summary(data.full)
+########## 3. CREATING FEATURES
 
+##### 3.1. FEATURES ON FULL DATA
+
+#################### 
 # Outsource some code to be more flexible
-# Also saves the results , we could reload here if possible instead of doing again
-# Add data from json file, info on song name, album name, artist name
+# Also saves the results, we could reload here if possible instead of doing again
+#################### 
+
+### Add data from json file, info on song name, album name, artist name
 if(file.exists(file.path(data.folder, "info_json.rds"))){
   extra_info <- readRDS(file.path(data.folder, "info_json.rds")) 
 }else{
-  source(file.path(code.folder,"code_1_3_data_prep_json_file.R"))
+  source(file.path(code.folder,"code_2_features_json_file.R"))
   saveRDS(extra_info, file = file.path(data.folder, "info_json.Rds"))
 }
 data.full <- merge(data.full, extra_info, by = "media_id", all.x = TRUE)
 
-# Add time related variables
-source(file.path(code.folder,"code_1_4_data_prep_time_lag.R"))
+### Add time-related variables
+source(file.path(code.folder, "code_2_features_time_related.R"))
+
+##### 3.2. FEATURES ON PARTITIONED DATA
 
 # Add data split training/test variable
 #data.full[flow_position == 1 & dataset == 'train', dataset := "test"] # Only 6034 obs..
 # Extract last 10 observations for each user, if possible
 # Will move rare users completely to the test set
-data.full[data.full[dataset == 'train',list(index = tail(.I, 10)), by = user_id]$index, dataset := 'test']
+data.full[data.full[dataset == 'train',list(index = head(.I, 10)), by = user_id]$index, dataset := 'test']
 
-# Compute naive skip ratios as features
-source(file.path(code.folder,"code_2_naive_ratios.R"))
+### Compute total plays and skips as features
+source(file.path(code.folder, "code_2_features_total_plays.R"))
 
+### Compute naive skip ratios as features
+source(file.path(code.folder, "code_2_features_naive_ratios.R"))
+
+##### 4. EXPORTING DATA
 # Make nice IDs for embedding
+# Note that rare IDs are replaced and all original ID info dropped 
 source(file.path(func.folder, "createEmbeddingID.R"))
-data.full[, c("user_id_embedding", "artist_id_embedding","media_id_embedding", "genre_id_embedding") :=
-            lapply(list(user_id, artist_id, media_id, genre_id), createEmbeddingID)]
+trainIdx <- which(data.full$dataset == "train")
+#data.full[, user_id := createEmbeddingID(user_id, trainIdx = trainIdx)]
+idCols <- c("user_id", "artist_id","media_id", "genre_id")
+data.full[, (idCols) := lapply(.SD, createEmbeddingID, trainIdx = trainIdx),
+          .SDcols = idCols]
+
+# Avoid work in Python:
+# Remove everything not needed for estimation 
+data.full[, c("ts_listen", "release_date", "sng_title", "alb_title", "art_name", "songs_in_the_alb",
+              "songs_by_the_art", "alb_by_art") := NULL]
+
+# Transform factor to dummy
+data.full[, c("platform_name1", "platform_name2", "platform_family1", "platform_family2") :=
+            list(ifelse(platform_name == 1, 1, 0), ifelse(platform_name == 2, 1, 0),
+                 ifelse(platform_family == 1, 1, 0), ifelse(platform_family == 2, 1, 0))]
+#source(file.path(func.folder, "code_2_dummy_matrix.R"))
+data.full[, .(platform_name, platform_family, context_type) := NULL]
 
 # saving Data
-write.csv(data.full, file.path(data.folder, "data_full.csv"))
+fwrite(data.full, file.path(data.folder, "data_full.csv"))
