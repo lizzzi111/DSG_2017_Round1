@@ -49,8 +49,8 @@ setkey(data.full, user_id, media_id)
 ########## 2. CONVERTING VARIABLES
 
 # converting factors
-temp <- c("genre_id", "media_id", "album_id", "user_id", "artist_id", "user_gender", "context_type", "platform_name",
-          "platform_family", "listen_type", "is_listened")
+temp <- c("genre_id", "media_id", "album_id", "user_id", "artist_id", "user_gender", "context_type", 
+          "platform_name", "platform_family", "listen_type", "is_listened")
 data.full[, (temp) := lapply(.SD, factor), .SDcols = temp]
 
 # converting timestamps
@@ -152,7 +152,7 @@ keras4 <- fread(file.path(subm.folder, "deep_keras_4.csv"), sep = ",", dec = "."
 keras5 <- fread(file.path(subm.folder, "deep_keras_5.csv"), sep = ",", dec = ".", header = T)$is_listened
 
 # loading user_ratio
-ratio <- fread(file.path(subm.folder, "naive_ratio_user.csv"), sep = ",", dec = ".", header = T)$is_listened
+ratio <- fread(file.path(subm.folder, "naive_ratio_user_flow.csv"), sep = ",", dec = ".", header = T)$is_listened
 
 # matrix with predictions
 pred.matrix <- data.frame(user_ratio = ratio)

@@ -8,9 +8,6 @@ library(compiler)
 # function for perfroming ES
 ES <- cmpfun(function(X, Y, iter = 100L, display = T){
   
-  # converting target to numeric
-  Y <- as.numeric(Y)-1
-  
   # setting initial values
   N           <- ncol(X)
   weights     <- rep(0L, N)
@@ -28,7 +25,7 @@ ES <- cmpfun(function(X, Y, iter = 100L, display = T){
     # optimizing
     sum.weights   <- sum.weights + 1L
     pred          <- (pred + X) * (1L / sum.weights)
-    auc           <- apply(pred, 2, function(x) auc(roc(x, real)))
+    auc           <- apply(pred, 2, function(x) auc(roc(x, Y)))
     best          <- which.max(auc)
     weights[best] <- weights[best] + 1L
     pred          <- pred[, best] * sum.weights
