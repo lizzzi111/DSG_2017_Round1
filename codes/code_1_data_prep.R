@@ -98,7 +98,7 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 # Make nice IDs for embedding
 # Note that rare IDs are replaced and all original ID info dropped 
 source(file.path(func.folder, "createEmbeddingID.R"))
-trainIdx <- which(data.full$dataset == "train")
+trainIdx <- which(data.full$dataset == "train" & data.full$listen_type == 1)
 #data.full[, user_id := createEmbeddingID(user_id, trainIdx = trainIdx)]
 idCols <- c("user_id", "artist_id","media_id", "genre_id", "context_type")
 data.full[, (idCols) := lapply(.SD, createEmbeddingID, trainIdx = trainIdx),

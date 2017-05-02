@@ -1,24 +1,37 @@
 createEmbeddingID <- function(x, trainIdx){
-  full <- data.table(ID = x)
-  full[, ID_group := .GRP, by = ID]
+  x <- as.character(x)
+  tr <- unique(x[trainIdx])
+  count <- table(x[trainIdx])
+  rare <- names(count[count <= max(min(count)+1, 2)])
   
-  #Count values in train
-  tab <- table(full[trainIdx, ID_group])
-  tabTable <- data.table(ID_group = as.integer(names(tab)), count = as.numeric(tab))
-  # Values in train less than 10 times or minimum number of occurences +2
-  #rare <- names(tab[tab <= max(min(tab)+2, 10)])
+  x[!x %in% tr | x %in% rare] <- "PLACEHOLDER"
   
-  full <- merge(full, tabTable, by ="ID_group", all.x = TRUE)
-  full[is.na(count), count := 0]
-  
-  full[, ID_embedding := ID_group]
-  full[count <= max(min(count)+2, 3), ID_embedding := -1]
-  
-  full[, ID_embedding := GRP, by = ID_embedding]
-  full[, ID_embedding := as.integer(ID_embedding-1)]
-  
-  return(full$ID_embedding)
+  dt <- data.table(ID_old = x)
+  dt[,ID_new := .GRP-1, by = ID_old]
+ 
+  return(dt$ID_new)
 }
+
+# createEmbeddingID <- function(x, trainIdx){
+#   full <- data.table(ID = paste0("X", x))
+# 
+#   #Count values in train
+#   tab <- table(full[trainIdx, ID])
+#   tabTable <- data.table(ID = names(tab), count = as.numeric(tab))
+#   # Values in train less than 10 times or minimum number of occurences +2
+#   #rare <- names(tab[tab <= max(min(tab)+2, 10)])
+# 
+#   full <- merge(full, tabTable, by ="ID", all.x = TRUE)
+#   full[is.na(count), count := 0]
+# 
+#   full[, ID_temp := ID]
+#   full[count <= max(min(count)+2, 3), ID_temp := "PLACEHOLDER"]
+# 
+#   full[, ID_embedding := .GRP, by = ID_temp]
+#   full[, ID_embedding := as.integer(ID_embedding-1)]
+# 
+#   return(full$ID_embedding)
+# }
 
 
 # createEmbeddingID <- function(x, trainIdx){
