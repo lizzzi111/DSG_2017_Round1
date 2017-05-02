@@ -6,7 +6,7 @@
 library(compiler)
 
 # function for perfroming ES
-ES <- cmpfun(function(X, Y, iter = 100L){
+ES <- cmpfun(function(X, Y, iter = 100L, display = T){
   
   # converting target to numeric
   Y <- as.numeric(Y)-1
@@ -19,10 +19,17 @@ ES <- cmpfun(function(X, Y, iter = 100L){
   
   # performing hill-climbing
   while(sum.weights < iter) {
+    
+    # displyaing iteration number  
+    if (display == TRUE) {
+      print(paste0("ES - iteration ", (sum.weights+1), "/", iter))
+    }
+    
+    # optimizing
     sum.weights   <- sum.weights + 1L
     pred          <- (pred + X) * (1L / sum.weights)
-    errors        <- sqrt(colSums((pred - Y) ^ 2L))
-    best          <- which.min(errors)
+    auc           <- apply(pred, 2, function(x) auc(roc(x, real)))
+    best          <- which.max(auc)
     weights[best] <- weights[best] + 1L
     pred          <- pred[, best] * sum.weights
   }
@@ -33,7 +40,7 @@ ES <- cmpfun(function(X, Y, iter = 100L){
 
 
 # function for performing bagged ES
-BES <- cmpfun(function(X, Y, bags = 10L, p = 0.5, iter = 100L, display = TRUE){
+BES <- cmpfun(function(X, Y, bags = 10L, p = 0.5, iter = 100L, display = T){
   
   # converting target to numeric
   Y <- as.numeric(Y)-1
@@ -48,8 +55,8 @@ BES <- cmpfun(function(X, Y, bags = 10L, p = 0.5, iter = 100L, display = TRUE){
   while(i < bags)  {
     
     # displyaing iteration number  
-    if ((display == TRUE) & ((i+1)%%5L == 0L)) {
-      print(paste0("BES - iteration ", i+1, "/", bags))
+    if (display == TRUE) {
+      print(paste0("BES - bag ", i+1, "/", bags))
     }
     
     # doing ES on a bagged sample
