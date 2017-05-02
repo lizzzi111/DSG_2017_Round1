@@ -1,3 +1,6 @@
-data/train.csv
-data/test.csv
-data/data_full.csv
+codes/.ipynb_checkpoints
+data/*.csv
+.Rproj.user
+.RHistory
+.RData
+*/.DS_Store
