@@ -37,7 +37,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 
 # loading training data
 data.train <- fread(file.path(data.folder, "tr.csv"), sep = ",", dec = ".", header = T)
-data.test  <- fread(file.path(data.folder, "ts_100.csv"), sep = ",", dec = ".", header = T)
+data.test  <- fread(file.path(data.folder, "ts.csv"), sep = ",", dec = ".", header = T)
 
 # merging data sets
 data.test$dataset  <- "test"
@@ -79,12 +79,24 @@ data.test  <- data.full[data.full$dataset == "test",  ]
 
 
 ########## 5. LOADING KERAS PREDICTION
-deep.pred <- fread(file.path(data.folder, "deep_128_64_flow_cont.csv"), sep = ",", dec = ".", header = T)
+keras1 <- fread(file.path(data.folder, "keras_ts_1.csv"), sep = ",", dec = ".", header = T)
+keras2 <- fread(file.path(data.folder, "keras_ts_2.csv"), sep = ",", dec = ".", header = T)
+keras3 <- fread(file.path(data.folder, "keras_ts_3.csv"), sep = ",", dec = ".", header = T)
+keras4 <- fread(file.path(data.folder, "keras_ts_4.csv"), sep = ",", dec = ".", header = T)
 temp <- c("media_id", "user_id")
-deep.pred[, (temp) := lapply(.SD, factor), .SDcols = temp]
-deep.pred <- deep.pred[order(deep.pred$user_id, deep.pred$media_id), ]
+keras1[, (temp) := lapply(.SD, factor), .SDcols = temp]
+keras2[, (temp) := lapply(.SD, factor), .SDcols = temp]
+keras3[, (temp) := lapply(.SD, factor), .SDcols = temp]
+keras4[, (temp) := lapply(.SD, factor), .SDcols = temp]
+keras1 <- keras1[order(keras1$user_id, keras1$media_id), ]
+keras2 <- keras2[order(keras2$user_id, keras2$media_id), ]
+keras3 <- keras3[order(keras3$user_id, keras3$media_id), ]
+keras4 <- keras4[order(keras4$user_id, keras4$media_id), ]
 data.test <- data.test[order(data.test$user_id, data.test$media_id), ]
-data.test$deep_pred <- deep.pred$is_listened
+data.test$keras1 <- keras1$is_listened
+data.test$keras2 <- keras2$is_listened
+data.test$keras3 <- keras3$is_listened
+data.test$keras4 <- keras4$is_listened
 
 
 
