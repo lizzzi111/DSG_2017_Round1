@@ -2,7 +2,7 @@ createEmbeddingID <- function(x, trainIdx){
   x <- as.character(x)
   tr <- unique(x[trainIdx])
   count <- table(x[trainIdx])
-  rare <- names(count[count <= max(min(count)+1, 2)])
+  rare <- names(count[count <= max(min(count), 1)])
   
   x[!x %in% tr | x %in% rare] <- "PLACEHOLDER"
   
