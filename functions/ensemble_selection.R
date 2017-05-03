@@ -39,9 +39,6 @@ ES <- cmpfun(function(X, Y, iter = 100L, display = T){
 # function for performing bagged ES
 BES <- cmpfun(function(X, Y, bags = 10L, p = 0.5, iter = 100L, display = T){
   
-  # converting target to numeric
-  Y <- as.numeric(Y)-1
-  
   # setting initial values
   i <- 0L
   N <- nrow(X)
