@@ -204,6 +204,9 @@ for (i in 1:nrow(summary(preds))) {
   pred.matrix <- cbind(pred.matrix, data$is_listened)
 }
 
+# droping user_ratio
+pred.matrix <- pred.matrix[, 2:ncol(pred.matrix)]
+
 # assigning colnames
 colnames(pred.matrix) <- file.list
 
