@@ -60,14 +60,14 @@ data.full[, (temp) := lapply(.SD, factor), .SDcols = temp]
 
 ########## 3. CREATING FEATURES
 
-### Add time-related variables
-#source(file.path(code.folder, "code_2_features_time_related.R"))
+### Add naive skip ratios as features
+#source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
 ### Add total plays and skips as features
 #source(file.path(code.folder, "code_2_features_total_plays.R"))
 
-### Add naive skip ratios as features
-source(file.path(code.folder, "code_2_features_naive_ratios.R"))
+### Add time-related variables
+#source(file.path(code.folder, "code_2_features_time_related.R"))
 
 
 ########## 4. DATA PARTITIONING
@@ -76,7 +76,7 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 data.full <- as.data.frame(data.full)
 data.train <- data.full[data.full$dataset == "train", ]
 data.test  <- data.full[data.full$dataset == "test",  ]
-rm(list = c("data.full", "data.train", "artist.ratio", "song.ratio", "genre.ratio", "user.ratio.flow", "user.ratio.othr"))
+rm(list = c("data.full", "data.train"))
 
 # sorting the testing data
 data.test <- data.test[order(data.test$user_id, data.test$media_id), ]
@@ -90,12 +90,12 @@ data.test <- data.test[order(data.test$user_id, data.test$media_id), ]
 ###################################
 
 # getting the list of files
-file.list <- list.files("predictions_valid")
+file.list <- list.files("pred_valid")
 preds <- list()
 
 # loading all predictions
 for (i in 1:length(file.list)) {
-  preds[[i]] <- read.csv2(file.path("predictions_valid", file.list[i]), sep = ",", dec = ".", header = T)
+  preds[[i]] <- read.csv2(file.path("pred_valid", file.list[i]), sep = ",", dec = ".", header = T)
   print(file.path("Loading ", file.list[i]))
 }
 
@@ -104,7 +104,7 @@ ts.index <- read.csv2(file.path(data.folder, "ts_index.csv"), sep = ",", dec = "
 ts.index <- ts.index[order(ts.index$user_id, ts.index$media_id), ]
 
 # creating preddiction matrix
-pred.matrix <- data.frame(user_id = data.test$user_id, media_id = data.test$media_id, row_names = ts.index$row_names, user_ratio = data.test$user_ratio_flow)
+pred.matrix <- data.frame(user_id = data.test$user_id, media_id = data.test$media_id, row_names = ts.index$row_names)
 pred.matrix <- pred.matrix[order(pred.matrix$row_names), ]
 
 # aligning predictions with row index
@@ -130,7 +130,7 @@ for (i in 1:nrow(summary(preds))) {
 # assigning colnames
 pred.matrix <- pred.matrix[order(pred.matrix$user_id, pred.matrix$media_id), ]
 pred.matrix <- pred.matrix[, 4:ncol(pred.matrix)]
-colnames(pred.matrix) <- c("user_ratio", file.list)
+colnames(pred.matrix) <- c(file.list)
 
 
 
@@ -143,6 +143,11 @@ colnames(pred.matrix) <- c("user_ratio", file.list)
 # extracting real values
 real <- data.test$is_listened
 
+# drop weak classifiers
+aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
+good <- names(aucs)[aucs > 0.8]
+pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
+
 # extracting number of models
 k <- ncol(pred.matrix)
 
@@ -152,7 +157,7 @@ pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
 # ensemble selection
 es.weights  <- ES(X = pred.matrix[,1:k],  Y = real, iter = 100)
-bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 100, bags = 100, p = 0.5)
+bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 100, bags = 10, p = 0.5)
 pred.matrix$es     <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
 
@@ -172,7 +177,7 @@ es.weights
 ###################################
 
 # getting the list of files
-file.list <- list.files("predictions_unknown")
+file.list <- list.files("pred_unknown")
 preds <- list()
 
 # loading user_ratio
@@ -180,7 +185,7 @@ ratio <- fread(file.path(subm.folder, "naive_ratio_user_flow.csv"), sep = ",", d
 
 # loading all predictions
 for (i in 1:length(file.list)) {
-  preds[[i]] <- read.csv2(file.path("predictions_unknown", file.list[i]), sep = ",", dec = ".", header = T)
+  preds[[i]] <- read.csv2(file.path("pred_unknown", file.list[i]), sep = ",", dec = ".", header = T)
   print(file.path("Loading ", file.list[i]))
 }
 
@@ -215,4 +220,4 @@ data.unknown$sample_id <- as.factor(data.unknown$sample_id)
 data.unknown$is_listened <- NA
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "keras_es_31.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "keras_es_21.csv")
