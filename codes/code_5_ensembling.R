@@ -130,7 +130,7 @@ for (i in 1:nrow(summary(preds))) {
 # assigning colnames
 pred.matrix <- pred.matrix[order(pred.matrix$user_id, pred.matrix$media_id), ]
 pred.matrix <- pred.matrix[, 4:ncol(pred.matrix)]
-colnames(pred.matrix) <- c(file.list)
+colnames(pred.matrix) <- file.list
 
 
 
@@ -156,17 +156,19 @@ pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
 pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
 # ensemble selection
-es.weights  <- ES(X = pred.matrix[,1:k],  Y = real, iter = 100)
-bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 100, bags = 10, p = 0.5)
-pred.matrix$es     <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
-pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
+es.weights <- ES(X = pred.matrix[,1:k],  Y = real, iter = 100)
+pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
+
+# bagged ensemble selection
+#bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 100, bags = 10, p = 0.5)
+#pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
 
 # computing AUC
 apply(pred.matrix, 2, function(x) auc(roc(x, real)))
 
 # displaying ES weights
 names(es.weights) <- colnames(pred.matrix)[1:length(es.weights)]
-es.weights
+es.weights[es.weights > 0]
 
 
 
@@ -202,8 +204,13 @@ for (i in 1:nrow(summary(preds))) {
   pred.matrix <- cbind(pred.matrix, data$is_listened)
 }
 
+# assigning colnames
+colnames(pred.matrix) <- file.list
+
+# drop weak classifiers
+pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
+
 # extracting number of models
-colnames(pred.matrix) <- c("user_ratio", file.list)
 k <- ncol(pred.matrix)
 
 # mean and median predictions
@@ -211,8 +218,10 @@ pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
 pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
 # ensemble selection
-pred.matrix$es     <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
-pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
+pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
+
+# bagged ensemble selection
+#pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
 
 # loading unknown data
 data.unknown  <- read.csv2(file.path(data.folder, "test.csv"), sep = ",", dec = ".", header = T)
@@ -220,4 +229,4 @@ data.unknown$sample_id <- as.factor(data.unknown$sample_id)
 data.unknown$is_listened <- NA
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "keras_es_21.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "keras_es_21_models.csv")
