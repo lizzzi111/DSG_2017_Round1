@@ -60,14 +60,14 @@ data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 
 ########## 3. CREATING FEATURES
 
-### Add time-related variables
-source(file.path(code.folder, "code_2_features_time_related.R"))
+### Add naive skip ratios as features
+source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
 ### Add total plays and skips as features
 source(file.path(code.folder, "code_2_features_total_plays.R"))
 
-### Add naive skip ratios as features
-source(file.path(code.folder, "code_2_features_naive_ratios.R"))
+### Add time-related variables
+source(file.path(code.folder, "code_2_features_time_related.R"))
 
 
 ########## 4. DATA PARTITIONING
@@ -87,7 +87,8 @@ rm(list = "data.full")
 ###################################
 
 # model equation
-equation <- as.formula(is_listened ~ hours + time_diff + platform_name + user_age + user_gender + media_duration +
+equation <- as.formula(is_listened ~ hours + time_diff + platform_name + user_age + user_gender + media_duration + context_type + 
+                             user_ratio_flow + song_ratio + artist_ratio + genre_ratio + is_listened_lag + 
                              song_plays + artist_plays + album_plays + genre_plays + 
                              song_skips + artist_skips + album_skips + genre_skips)
 
@@ -117,8 +118,8 @@ auc(roc(rf.pred, real))
 # saving predictions
 rf <- data.frame(user_id = data.test$user_id, media_id = data.test$media_id, is_listened = rf.pred)
 xg <- data.frame(user_id = data.test$user_id, media_id = data.test$media_id, is_listened = xg.pred)
-write.table(rf, file = file.path("predictions_valid", "rf_basic.csv"), quote = F, sep = ",", dec = ".")
-write.table(xg, file = file.path("predictions_valid", "xg_basic.csv"), quote = F, sep = ",", dec = ".")
+write.table(rf, file = file.path("pred_valid", "rf_basic.csv"), quote = F, sep = ",", dec = ".")
+write.table(xg, file = file.path("pred_valid", "xg_basic.csv"), quote = F, sep = ",", dec = ".")
 
 
 
@@ -194,5 +195,5 @@ rf.pred <- predict(rf.model, newdata = data.unknown, type = "prob")[, "1"]
 xg.pred <- predict(xg.model, newdata = data.unknown, type = "prob")[, "1"]
 
 # creating submission
-submit(rf.pred, data = data.unknown, folder = "predictions_unknown", file = "rf_basic.csv")
-submit(xg.pred, data = data.unknown, folder = "predictions_unknown", file = "xg_basic.csv")
+submit(rf.pred, data = data.unknown, folder = "pred_unknown", file = "rf_basic.csv")
+submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_basic.csv")
