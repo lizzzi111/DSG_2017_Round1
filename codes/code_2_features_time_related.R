@@ -39,6 +39,11 @@ data.full[is.na(time_diff), time_diff := mean(data.full$time_diff, na.rm = T)]
 # Create a factor variable for the hour of the day when the song is played
 data.full[, hours := as.factor(format(as.POSIXct(data.full$ts_listen, format = "%H:%M:%S"),"%H"))]
 
+# Create a lagged is_listened (for the previous song)
+data.full[, is_listened_lag :=  shift(.SD), by = user_id, .SDcols = "is_listened"]
+data.full[, is_listened_lag :=  as.numeric(is_listened_lag)-1]
+data.full[is.na(is_listened_lag), is_listened_lag := user_ratio_flow]
+
 # # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 # save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))
 # 
