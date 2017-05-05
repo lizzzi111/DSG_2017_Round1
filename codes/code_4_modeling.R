@@ -64,7 +64,7 @@ data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
 ### Add total plays and skips as features
-source(file.path(code.folder, "code_2_features_total_plays.R"))
+#source(file.path(code.folder, "code_2_features_total_plays.R"))
 
 ### Add time-related variables
 source(file.path(code.folder, "code_2_features_time_related.R"))
@@ -78,19 +78,19 @@ data.train <- data.full[data.full$dataset == "train", ]
 data.test  <- data.full[data.full$dataset == "test",  ]
 rm(list = "data.full")
 
+# sorting the testing data
+data.test <- data.test[order(data.test$row_index), ]
+
 
 
 ###################################
 #                                 #
-#             MODELING            #
+#      MODELING FOR VALIDATION    #
 #                                 #
 ###################################
 
 # model equation
-equation <- as.formula(is_listened ~ hours + time_diff + platform_name + user_age + user_gender + media_duration + context_type + 
-                             user_ratio_flow + song_ratio + artist_ratio + genre_ratio + is_listened_lag + 
-                             song_plays + artist_plays + album_plays + genre_plays + 
-                             song_skips + artist_skips + album_skips + genre_skips)
+equation <- as.formula(is_listened ~ is_listened_lag + user_ratio_flow + context_type + song_session_position)
 
 # training XGB model
 xg.grid  <- expand.grid(nrounds = 500, lambda = 1, alpha = 1, eta = 0.3)
@@ -109,23 +109,23 @@ varImpPlot(rf.model, type = 1)
 # predicting
 xg.pred <- predict(xg.model, newdata = data.test, type = "prob")[, "1"]
 rf.pred <- predict(rf.model, newdata = data.test, type = "prob")[, "1"]
-real <- data.test$is_listened
   
 # computing AUC
+real <- data.test$is_listened
 auc(roc(xg.pred, real))
 auc(roc(rf.pred, real))
 
 # saving predictions
-rf <- data.frame(user_id = data.test$user_id, media_id = data.test$media_id, is_listened = rf.pred)
-xg <- data.frame(user_id = data.test$user_id, media_id = data.test$media_id, is_listened = xg.pred)
-write.table(rf, file = file.path("pred_valid", "rf_basic.csv"), quote = F, sep = ",", dec = ".")
-write.table(xg, file = file.path("pred_valid", "xg_basic.csv"), quote = F, sep = ",", dec = ".")
+xg <- data.frame(row_index = data.test$row_index, is_listened = xg.pred)
+rf <- data.frame(row_index = data.test$row_index, is_listened = rf.pred)
+write.table(xg, file = file.path("pred_valid", "xg_ratio_lag_context.csv"), quote = F, sep = ",", dec = ".")
+write.table(rf, file = file.path("pred_valid", "rf_ratio_lag_context.csv"), quote = F, sep = ",", dec = ".")
 
 
 
 ###################################
 #                                 #
-#      MODELING FOR SUBMISSION    #
+#     MODELING FOR SUBMISSION     #
 #                                 #
 ###################################
 
@@ -134,6 +134,9 @@ write.table(xg, file = file.path("pred_valid", "xg_basic.csv"), quote = F, sep =
 # loading training data
 data.train <- fread(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
 data.test  <- fread(file.path(data.folder, "test.csv"),  sep = ",", dec = ".", header = T)
+
+# keeping only Flow songs
+data.train <- data.train[data.train$listen_type == "1", ]
 
 # merging data sets
 data.test$is_listened <- NA
@@ -158,14 +161,14 @@ data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 
 ########## 3. CREATING FEATURES
 
-### Add time-related variables
-source(file.path(code.folder, "code_2_features_time_related.R"))
-
-### Add total plays and skips as features
-source(file.path(code.folder, "code_2_features_total_plays.R"))
-
 ### Add naive skip ratios as features
 source(file.path(code.folder, "code_2_features_naive_ratios.R"))
+
+### Add total plays and skips as features
+#source(file.path(code.folder, "code_2_features_total_plays.R"))
+
+### Add time-related variables
+source(file.path(code.folder, "code_2_features_time_related.R"))
 
 
 ########## 4. DATA PARTITIONING
@@ -174,7 +177,10 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 data.full    <- as.data.frame(data.full)
 data.known   <- data.full[data.full$dataset == "train", ]
 data.unknown <- data.full[data.full$dataset == "test",  ]
-rm(list = "data.full")
+rm(list = "data.full", "data.train", "data.test", "temp")
+
+# sorting the unknown data
+data.unknown <- data.unknown[order(data.unknown$sample_id), ]
 
 
 ########## 5. MODELING
@@ -191,9 +197,9 @@ rf.model
 ######### 6. FORECASTING
 
 # predicting
-rf.pred <- predict(rf.model, newdata = data.unknown, type = "prob")[, "1"]
 xg.pred <- predict(xg.model, newdata = data.unknown, type = "prob")[, "1"]
+rf.pred <- predict(rf.model, newdata = data.unknown, type = "prob")[, "1"]
 
 # creating submission
-submit(rf.pred, data = data.unknown, folder = "pred_unknown", file = "rf_basic.csv")
-submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_basic.csv")
+submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_ratio_lag_context.csv")
+submit(rf.pred, data = data.unknown, folder = "pred_unknown", file = "rf_ratio_lag_context.csv")
