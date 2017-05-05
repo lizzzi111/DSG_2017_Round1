@@ -18,7 +18,7 @@ data.full[is.na(time_lag), time_lag := 0]
 data.full[, session_id := cumsum(time_lag>20)+1, by = user_id]
 
 # Count the absolute position of the song in the session
-data.full[, song_session_position := 1:.N, by = session_id]
+data.full[, song_session_position := 1:.N, by = c("user_id", "session_id")]
 
 # Find the index of the song in the flow
 temp <- data.full[, list(listen_type = listen_type, session_id)]
@@ -41,8 +41,8 @@ data.full[, hours := as.factor(format(as.POSIXct(data.full$ts_listen, format = "
 
 # Create a lagged is_listened (for the previous song)
 data.full[, is_listened_lag :=  shift(.SD), by = user_id, .SDcols = "is_listened"]
-data.full[, is_listened_lag :=  as.numeric(is_listened_lag)-1]
-data.full[is.na(is_listened_lag), is_listened_lag := user_ratio_flow]
+data.full[is.na(is_listened_lag), is_listened_lag := "none"]
+data.full[song_session_position == 1, is_listened_lag :=  "none"]
 
 # # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 # save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))
