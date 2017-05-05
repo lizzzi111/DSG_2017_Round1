@@ -43,6 +43,11 @@ data.full[, weekday := factor(weekdays(ts_listen, abbreviate = TRUE))]
 # Release year
 data.full[, release_year := year(release_date)]
 
+# Create a lagged is_listened (for the previous song)
+data.full[, is_listened_lag :=  shift(.SD), by = user_id, .SDcols = "is_listened"]
+data.full[, is_listened_lag :=  as.numeric(is_listened_lag)-1]
+data.full[is.na(is_listened_lag), is_listened_lag := user_ratio_flow]
+
 # # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 # save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))
 # 
