@@ -1,6 +1,6 @@
 # loading libraries
 library(pacman)
-pacman::p_load("anytime","data.table")
+pacman::p_load("anytime","data.table", "lubridate")
 
 # Order data by user_id and ts_listen
 # Using set* functions is faster
@@ -37,7 +37,11 @@ data.full[is.na(time_diff), time_diff := mean(data.full$time_diff, na.rm = T)]
 #summary(data.full$time_diff)
 
 # Create a factor variable for the hour of the day when the song is played
-data.full[, hours := as.factor(format(as.POSIXct(data.full$ts_listen, format = "%H:%M:%S"),"%H"))]
+data.full[, hour_of_day := factor(cut(hour(ts_listen), 8, labels = FALSE))]
+# Weekday
+data.full[, weekday := factor(weekdays(ts_listen, abbreviate = TRUE))]
+# Release year
+data.full[, release_year := year(release_date)]
 
 # # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 # save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))
