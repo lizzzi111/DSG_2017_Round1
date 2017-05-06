@@ -13,7 +13,7 @@ data.full[is.na(time_lag), time_lag := 0]
 #let's look at the most typical time lags
 #summary(data.full$time_lag)
 
-#let's take more than 30 mins as a start for a new session
+#let's take more than 20 mins as a start for a new session
 #dt[,session_id := seq_along(time_lag), by = time_lag < 20]
 data.full[, session_id := cumsum(time_lag>20)+1, by = user_id]
 
@@ -21,8 +21,8 @@ data.full[, session_id := cumsum(time_lag>20)+1, by = user_id]
 data.full[, song_session_position := 1:.N, by = c("user_id", "session_id")]
 
 # Find the index of the song in the flow
-temp <- data.full[, list(listen_type = listen_type, session_id)]
-temp[, flow_lag := shift(listen_type, fill = 0), by=session_id]
+temp <- data.full[, list(listen_type = listen_type, user_id, session_id)]
+temp[, flow_lag := shift(listen_type, fill = 0), by = c("user_id", "session_id")]
 temp[, first_flow := as.numeric(listen_type == 1 & flow_lag == 0)]
 #data.full[listen_type == "1", flow_position := cumsum(listen_type == "1" & shift(listen_type, fill = "0") == "0"), by = session_id]
 data.full[, first_flow := temp$first_flow]
@@ -41,8 +41,8 @@ data.full[, hours := as.factor(format(as.POSIXct(data.full$ts_listen, format = "
 
 # Create a lagged is_listened (for the previous song)
 data.full[, is_listened_lag :=  shift(.SD), by = user_id, .SDcols = "is_listened"]
-data.full[is.na(is_listened_lag), is_listened_lag := "none"]
-data.full[song_session_position == 1, is_listened_lag :=  "none"]
+data.full$is_listened_lag[is.na(data.full$is_listened_lag)] <- "none"
+data.full$is_listened_lag[data.full$song_session_position == 1] <- "none"
 
 # # easier to load, however use rbind, after ordering dt <- dt[order(ts_listen),.SD, by=user_id]
 # save(session_id, file = file.path(data.folder, "session_id_vector.Rda"))

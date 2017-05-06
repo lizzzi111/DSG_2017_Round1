@@ -2,7 +2,7 @@
 data.train <- data.full[dataset == 'train',]
 
 # converting to numeric
-data.train$is_listened <- as.numeric(data.train$is_listened)-1
+#data.train$is_listened <- as.numeric(data.train$is_listened)-1
 
 ##### COMPUTING VARIABLES
 
