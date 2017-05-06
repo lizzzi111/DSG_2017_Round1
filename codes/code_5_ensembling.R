@@ -39,20 +39,12 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 #                                 #
 ###################################
 
-# loading training data
-data.train <- fread(file.path(data.folder, "tr.csv"), sep = ",", dec = ".", header = T)
-data.test  <- fread(file.path(data.folder, "ts.csv"), sep = ",", dec = ".", header = T)
-
-# merging data sets
-data.test$dataset  <- "test"
-data.train$dataset <- "train"
-data.full <- rbind(data.train, data.test)
-setkey(data.full, user_id, media_id)
+# loading data
+data.full <- read.csv2(file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", header = T)
 
 # converting and partitioning
-data.full <- as.data.frame(data.full)
-data.train <- data.full[data.full$dataset == "train", ]
 data.test  <- data.full[data.full$dataset == "test",  ]
+data.unknown  <- data.full[data.full$dataset == "unknown",  ]
 rm(list = c("data.full", "data.train"))
 
 # sorting the testing data
@@ -74,15 +66,15 @@ preds <- list()
 for (i in 1:length(file.list)) {
   print(file.path("Loading ", file.list[i]))
   preds[[i]] <- read.csv2(file.path("pred_valid", file.list[i]), sep = ",", dec = ".", header = T)
-  preds[[i]]$row_index <- as.numeric(as.character(preds[[i]]$row_index))
-  preds[[i]] <- preds[[i]][order(preds[[i]]$row_index), ]
+  #preds[[i]]$row_index <- as.numeric(as.character(preds[[i]]$row_index))
+  #preds[[i]] <- preds[[i]][order(preds[[i]]$row_index), ]
 }
 
 # creating preddiction matrix
-pred.matrix <- data.frame(row_index = data.test$row_index)
+pred.matrix <- data.frame(dataset = data.test$dataset)
 
 # merging all predicctions
-for (i in 1:nrow(summary(preds))) {
+for (i in 1:length(file.list)) {
   pred.matrix <- cbind(pred.matrix, preds[[i]]$is_listened)
 }
 
@@ -142,7 +134,6 @@ es.weights[es.weights > 0]
 ###################################
 
 # loading unknown data
-data.unknown <- read.csv2(file.path(data.folder, "test.csv"), sep = ",", dec = ".", header = T)
 data.unknown$is_listened <- NA
 
 # sorting the data
@@ -204,4 +195,4 @@ pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 #pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_15keras_1xgb.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_9_keras_newdata.csv")

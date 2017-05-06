@@ -68,6 +68,7 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
 ### Add time-related variables
 source(file.path(code.folder, "code_2_features_time_related.R"))
+data.full$song_first <- as.factor(data.full$song_session_position == 1)
 
 
 ########## 4. DATA PARTITIONING
@@ -90,7 +91,7 @@ data.test <- data.test[order(data.test$row_index), ]
 ###################################
 
 # model equation
-equation <- as.formula(is_listened ~ is_listened_lag + user_ratio_flow + context_type + song_session_position)
+equation <- as.formula(is_listened ~ user_ratio_flow + context_type + song_first)
 
 # training XGB model
 xg.grid  <- expand.grid(nrounds = 500, lambda = 1, alpha = 1, eta = 0.3)
@@ -169,6 +170,7 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 
 ### Add time-related variables
 source(file.path(code.folder, "code_2_features_time_related.R"))
+data.full$song_first <- as.factor(data.full$song_session_position == 1)
 
 
 ########## 4. DATA PARTITIONING
