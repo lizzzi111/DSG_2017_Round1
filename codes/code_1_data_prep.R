@@ -8,6 +8,7 @@
 rm(list = ls())
 
 # setting work directory
+# work.folder <- "N:/DSG2017/DSG_2017/"
 work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
 setwd(work.folder)
 
