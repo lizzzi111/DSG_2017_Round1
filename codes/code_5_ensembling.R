@@ -39,11 +39,7 @@ data.full <- read.csv2(file.path(data.folder, "data_flow.csv"), sep = ",", dec =
 # converting and partitioning
 data.test  <- data.full[data.full$dataset == "test",  ]
 data.unknown  <- data.full[data.full$dataset == "unknown",  ]
-rm(list = c("data.full", "data.train"))
-
-# sorting the testing data
-data.test$row_index <- as.numeric(as.character(data.test$row_index))
-data.test <- data.test[order(data.test$row_index), ]
+rm(list = c("data.full"))
 
 # loading unknown data
 data.unknown$is_listened <- NA
@@ -142,7 +138,7 @@ best.weights <- es.weights[es.weights > 0]
 
 # loading all predictions
 for (i in 1:length(best.weights)) {
-  print(file.path("Loading ", file.list[i]))
+  print(file.path("Loading ", names(best.weights)[i]))
   preds[[i]] <- read.csv2(file.path("pred_unknown", names(best.weights)[i]), sep = ",", dec = ".", header = T)
   preds[[i]]$sample_id <- as.numeric(as.character(preds[[i]]$sample_id))
   preds[[i]] <- preds[[i]][order(preds[[i]]$sample_id), ]
@@ -171,7 +167,7 @@ colnames(pred.matrix) <- names(best.weights)
 k <- ncol(pred.matrix)
 
 # ensemble selection
-pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
+pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*best.weights))
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_latest.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_new_25_models.csv")
