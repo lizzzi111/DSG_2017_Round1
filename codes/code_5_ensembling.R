@@ -86,6 +86,7 @@ pred.matrix <- pred.matrix[, 2:ncol(pred.matrix)]
 colnames(pred.matrix) <- file.list
 
 
+
 ###################################
 #                                 #
 #     2.2. BUILDING ENSEMBLES     #
@@ -95,10 +96,10 @@ colnames(pred.matrix) <- file.list
 # extracting real values
 real <- as.factor(data.test$is_listened)
 
-# droping weak classifiers [OPTIONAL]
-#aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
-#good <- names(aucs)[aucs > 0.7]
-#pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
+# droping too weak classifiers
+aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
+good <- names(aucs)[aucs > 0.6]
+pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
 
 # extracting number of models
 k <- ncol(pred.matrix)
@@ -170,4 +171,4 @@ k <- ncol(pred.matrix)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*best.weights))
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_new_25_models.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_new_25keras_13ratios.csv")
