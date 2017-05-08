@@ -9,8 +9,8 @@ rm(list = ls())
 
 # setting work directory
 # work.folder <- "N:/DSG2017/DSG_2017/"
-work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
-setwd(work.folder)
+#work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
+#setwd(work.folder)
 
 # setting inner folders
 code.folder <- "codes"
@@ -50,6 +50,10 @@ data.train$dataset <- "train"
 data.full <- rbind(data.train, data.test)
 setkey(data.full, user_id, media_id)
 rm(list = c("data.test",  "data.train"))
+
+api.data <- fread(file.path(data.folder, "api_final.txt"), sep = ",", dec = ".", header = T)
+api.data[fans == -1, fans := 0]
+data.full <- merge(data.full, api.data[,.(track_id, rank,bpm,position,lyrics_explicit,gain,fans)], by.x = "media_id", by.y = "track_id")
 
 
 ########## 2. CONVERTING VARIABLES ####

@@ -50,7 +50,7 @@ data.full <- merge(data.full, user.song.ratio,      all.x = TRUE, sort = F, by =
 
 # imputing NAs with user ratio
 data.full[is.na(user_ratio_full), user_ratio_full := mean(data.train$is_listened)]
-data.full[is.na(user_ratio_flow), user_ratio_flow := user_ratio_othr]
+data.full[is.na(user_ratio_flow), user_ratio_flow := user_ratio_full]
 data.full[is.na(genre_ratio),  genre_ratio  := mean(data.train$is_listened)]
 data.full[is.na(artist_ratio), artist_ratio := mean(data.train$is_listened)]
 data.full[is.na(song_ratio),   song_ratio   := mean(data.train$is_listened)]
