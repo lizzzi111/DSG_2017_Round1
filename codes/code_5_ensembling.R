@@ -108,6 +108,13 @@ k <- ncol(pred.matrix)
 pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
 pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
+# TOP-3 and TOP-5 mean ensemble
+aucs <- apply(pred.matrix[,1:k], 2, function(x) auc(roc(x, real)))
+top3 <- names(aucs)[order(aucs, decreasing = T)[1:3]]
+top5 <- names(aucs)[order(aucs, decreasing = T)[1:5]]
+pred.matrix$top3 <- apply(pred.matrix[,top3], 1, mean)
+pred.matrix$top5 <- apply(pred.matrix[,top5], 1, mean)
+
 # ensemble selection
 es.weights <- ES(X = pred.matrix[,1:k],  Y = real, iter = 100)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
