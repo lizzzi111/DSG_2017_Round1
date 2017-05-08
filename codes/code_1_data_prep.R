@@ -51,9 +51,12 @@ data.full <- rbind(data.train, data.test)
 setkey(data.full, user_id, media_id)
 rm(list = c("data.test",  "data.train"))
 
+# adding API data
 api.data <- fread(file.path(data.folder, "api_final.txt"), sep = ",", dec = ".", header = T)
 api.data[fans == -1, fans := 0]
-data.full <- merge(data.full, api.data[,.(track_id, rank,bpm,position,lyrics_explicit,gain,fans)], by.x = "media_id", by.y = "track_id")
+api.data <- api.data[!duplicated(api.data),]
+adata.full <- merge(data.full, api.data[,.(track_id,rank,bpm,position,lyrics_explicit,gain,fans)], by.x = "media_id", by.y = "track_id", all.x = T, all.y = F)
+
 
 
 ########## 2. CONVERTING VARIABLES ####
