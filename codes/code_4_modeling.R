@@ -31,54 +31,23 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 #                                 #
 ###################################
 
-########## 1. LOADING THE DATA
+# loading data
+data.full <- read.csv2(file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", header = T)
+data.full$is_listened <- as.factor(data.full$is_listened)
 
-# loading training data
-data.train <- fread(file.path(data.folder, "tr.csv"), sep = ",", dec = ".", header = T)
-data.test  <- fread(file.path(data.folder, "ts.csv"), sep = ",", dec = ".", header = T)
-
-# merging data sets
-data.test$dataset  <- "test"
-data.train$dataset <- "train"
-data.full <- rbind(data.train, data.test)
-setkey(data.full, user_id, media_id)
-
-
-########## 2. CONVERTING VARIABLES
-
-# converting factors
-temp <- c("genre_id", "media_id", "album_id", "user_id", "artist_id", "user_gender", "context_type", "platform_name",
-          "platform_family", "listen_type", "is_listened")
-data.full[, (temp) := lapply(.SD, factor), .SDcols = temp]
-
-# converting timestamps
-data.full[, release_date := as.Date(as.character(data.full$release_date), "%Y%m%d")]
-data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
-
-
-########## 3. CREATING FEATURES
-
-### Add naive skip ratios as features
-source(file.path(code.folder, "code_2_features_naive_ratios.R"))
-
-### Add total plays and skips as features
-#source(file.path(code.folder, "code_2_features_total_plays.R"))
-
-### Add time-related variables
-source(file.path(code.folder, "code_2_features_time_related.R"))
-data.full$song_first <- as.factor(data.full$song_session_position == 1)
-
-
-########## 4. DATA PARTITIONING
-
-# converting and partitioning
-data.full <- as.data.frame(data.full)
-data.train <- data.full[data.full$dataset == "train", ]
-data.test  <- data.full[data.full$dataset == "test",  ]
+# partitioning
+data.train   <- data.full[data.full$dataset == "train", ]
+data.test    <- data.full[data.full$dataset == "test",  ]
+data.unknown <- data.full[data.full$dataset == "unknown",  ]
 rm(list = "data.full")
 
 # sorting the testing data
-data.test <- data.test[order(data.test$row_index), ]
+#data.test$row_index <- as.numeric(as.character(data.test$row_index))
+#data.test <- data.test[order(data.test$row_index), ]
+
+# sorting unknown data
+data.unknown$sample_id <- as.numeric(as.character(data.unknown$sample_id))
+data.unknown <- data.unknown[order(data.unknown$sample_id), ]
 
 ###################################
 #                                 #
@@ -87,11 +56,14 @@ data.test <- data.test[order(data.test$row_index), ]
 ###################################
 
 # model equation
-equation <- as.formula(is_listened ~ user_ratio_flow + context_type + song_first)
+equation <- as.formula(is_listened ~ user_ratio_flow + user_ratio_full + user_age + user_gender + 
+                         context_type + hours + time_diff + first_flow + 
+                         song_session_position + platform_name1 + platform_name2 + 
+                         song_plays + artist_plays + album_plays)
 
 
 # training XGB model
-xg.grid  <- expand.grid(nrounds = 500, lambda = 1, alpha = 1, eta = 0.3)
+xg.grid  <- expand.grid(nrounds = 100, lambda = 1, alpha = 1, eta = 0.3)
 tr.grid  <- trainControl(method = "none")
 xg.model <- train(equation, data = data.train, method = "xgbLinear", trControl = tr.grid, tuneGrid = xg.grid)
 xg.model
@@ -114,10 +86,8 @@ auc(roc(xg.pred, real))
 auc(roc(rf.pred, real))
 
 # saving predictions
-xg <- data.frame(row_index = data.test$row_index, is_listened = xg.pred)
-rf <- data.frame(row_index = data.test$row_index, is_listened = rf.pred)
-write.table(xg, file = file.path("pred_valid", "xg_ratio_lag_context.csv"), quote = F, sep = ",", dec = ".")
-write.table(rf, file = file.path("pred_valid", "rf_ratio_lag_context.csv"), quote = F, sep = ",", dec = ".")
+write.table(xg, file = file.path("pred_valid", "xg_basic.csv"), quote = F, sep = ",", dec = ".")
+write.table(rf, file = file.path("pred_valid", "rf_basic.csv"), quote = F, sep = ",", dec = ".")
 
 
 
@@ -127,63 +97,6 @@ write.table(rf, file = file.path("pred_valid", "rf_ratio_lag_context.csv"), quot
 #                                 #
 ###################################
 
-########## 1. LOADING THE DATA
-
-# loading training data
-data.train <- fread(file.path(data.folder, "train.csv"), sep = ",", dec = ".", header = T)
-data.test  <- fread(file.path(data.folder, "test.csv"),  sep = ",", dec = ".", header = T)
-
-# keeping only Flow songs
-data.train <- data.train[data.train$listen_type == "1", ]
-
-# merging data sets
-data.test$is_listened <- NA
-data.train$sample_id  <- NA
-data.test$dataset  <- "test"
-data.train$dataset <- "train"
-data.full <- rbind(data.train, data.test)
-setkey(data.full, user_id, media_id)
-
-
-########## 2. CONVERTING VARIABLES
-
-# converting factors
-temp <- c("sample_id", "genre_id", "media_id", "album_id", "user_id", "artist_id", "user_gender", "context_type", "platform_name",
-          "platform_family", "listen_type", "is_listened")
-data.full[, (temp) := lapply(.SD, factor), .SDcols = temp]
-
-# converting timestamps
-data.full[, release_date := as.Date(as.character(data.full$release_date), "%Y%m%d")]
-data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
-
-
-########## 3. CREATING FEATURES
-
-### Add naive skip ratios as features
-source(file.path(code.folder, "code_2_features_naive_ratios.R"))
-
-### Add total plays and skips as features
-#source(file.path(code.folder, "code_2_features_total_plays.R"))
-
-### Add time-related variables
-source(file.path(code.folder, "code_2_features_time_related.R"))
-data.full$song_first <- as.factor(data.full$song_session_position == 1)
-
-
-########## 4. DATA PARTITIONING
-
-# converting and partitioning
-data.full    <- as.data.frame(data.full)
-data.known   <- data.full[data.full$dataset == "train", ]
-data.unknown <- data.full[data.full$dataset == "test",  ]
-rm(list = "data.full", "data.train", "data.test", "temp")
-
-# sorting the unknown data
-data.unknown <- data.unknown[order(data.unknown$sample_id), ]
-
-
-########## 5. MODELING
-
 # training XGB model
 xg.model <- train(equation, data = data.known, method = "xgbLinear", trControl = tr.grid, tuneGrid = xg.grid)
 xg.model
@@ -192,13 +105,10 @@ xg.model
 rf.model <- randomForest(equation, data = data.known, ntree = rf.trees, importance = T)
 rf.model
 
-
-######### 6. FORECASTING
-
 # predicting
 xg.pred <- predict(xg.model, newdata = data.unknown, type = "prob")[, "1"]
 rf.pred <- predict(rf.model, newdata = data.unknown, type = "prob")[, "1"]
 
 # creating submission
-submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_ratio_lag_context.csv")
-submit(rf.pred, data = data.unknown, folder = "pred_unknown", file = "rf_ratio_lag_context.csv")
+submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_basic.csv")
+submit(rf.pred, data = data.unknown, folder = "pred_unknown", file = "rf_basic.csv")
