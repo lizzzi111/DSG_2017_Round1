@@ -13,16 +13,17 @@ data.full[,time_lag:=c(0, difftime(tail(ts_listen,-1), head(ts_listen,-1), units
 #let's look at the most typical time lags
 #summary(data.full$time_lag)
 
-#let's take more than 30 mins as a start for a new session
+#let's take more than 20 mins as a start for a new session
 #dt[,session_id := seq_along(time_lag), by = time_lag < 20]
 data.full[, session_id := cumsum(time_lag>20)+1, by = user_id]
 
 # Count the absolute position of the song in the session
-data.full[, song_session_position := 1:.N, by = .(user_id, session_id)]
+
+data.full[, song_session_position := 1:.N, by = c("user_id", "session_id")]
 
 # Find the index of the song in the flow
 temp <- data.full[, list(listen_type = listen_type, user_id, session_id)]
-temp[, flow_lag := shift(listen_type, fill = 0), by = .(user_id, session_id)]
+temp[, flow_lag := shift(listen_type, fill = 0), by = c("user_id", "session_id")]
 temp[, first_flow := as.numeric(listen_type == 1 & flow_lag == 0)]
 #data.full[listen_type == "1", flow_position := cumsum(listen_type == "1" & shift(listen_type, fill = "0") == "0"), by = session_id]
 data.full[, first_flow := temp$first_flow]
@@ -50,7 +51,9 @@ data.full[, c("user_skip_ratio_last5") := rowMeans(mapply(cbind, shift(is_listen
 #data.full[, is_listened_lag :=  as.numeric(is_listened_lag)-1]
 data.full[is.na(is_listened_lag1), is_listened_lag1 := 0]
 data.full[is.na(is_listened_lag2), is_listened_lag2 := 0]
+data.full[song_session_position == 1, c("is_listened_lag1", "is_listened_lag2") := 0] # user to be := 'none', but that changes the column to character
 data.full[is.na(user_skip_ratio_last5)|is.nan(user_skip_ratio_last5), user_skip_ratio_last5 := 0.5]
+
 
 # Create features capturing difference of the song to the last songs
 data.full[, genre_equal_last_song := as.numeric(genre_id == shift(genre_id, fill = 0)), by = user_id]
