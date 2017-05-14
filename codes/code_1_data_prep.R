@@ -9,8 +9,8 @@ rm(list = ls())
 
 # setting work directory
 # work.folder <- "N:/DSG2017/DSG_2017/"
-#work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
-#setwd(work.folder)
+work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
+setwd(work.folder)
 
 # setting inner folders
 code.folder <- "codes"
@@ -54,15 +54,30 @@ data.full[, row_index := 1:nrow(data.full)]
 setkey(data.full, user_id, media_id)
 rm(list = c("data.test",  "data.train"))
 
-# adding API data
+
+
+########## 2. ADDING API DATA
+
+# adding data on songs
 api.data <- fread(file.path(data.folder, "api_final.txt"), sep = ",", dec = ".", header = T)
 api.data[fans == -1, fans := 0]
 api.data <- api.data[!duplicated(api.data),]
-adata.full <- merge(data.full, api.data[,.(track_id,rank,bpm,position,lyrics_explicit,gain,fans)], by.x = "media_id", by.y = "track_id", all.x = T, all.y = F)
+colnames(api.data) <- c("media_id", "song_rank", "song_bpm", "song_position", "song_lyrics_explicit", "song_gain", "album_id", "album_fans")
+data.full <- merge(data.full, api.data[,.(media_id, song_rank, song_bpm, song_position, song_lyrics_explicit, song_gain, album_fans)], 
+                   by = "media_id", all.x = T, all.y = F)
+
+# adding data on artists
+artist.data <- fread(file.path(data.folder, "user_artists.txt"), sep = ",", dec = ".", header = T)
+
+# adding data on albums
+album.data  <- fread(file.path(data.folder, "user_favourite_albums.txt"), sep = ",", dec = ".", header = T)
+
+# removing API data from memory
+rm(list = c("api.data", "artist.data", "album.data"))
 
 
 
-########## 2. CONVERTING VARIABLES ####
+########## 3. CONVERTING VARIABLES ####
 
 # converting factors
 #temp <- c("genre_id", "media_id", "album_id", "user_id", "artist_id", "context_type", "platform_name", "platform_family")
@@ -72,7 +87,9 @@ adata.full <- merge(data.full, api.data[,.(track_id,rank,bpm,position,lyrics_exp
 data.full[, release_date := as.Date(as.character(data.full$release_date), "%Y%m%d")]
 data.full[, ts_listen := anytime(data.full$ts_listen, asUTC = T)]
 
-########## 3. CREATING FEATURES ON FULL DATA ####
+
+
+########## 4. CREATING FEATURES ON FULL DATA ####
 
 ### add data from json file, info on song name, album name, artist name
 #if(file.exists(file.path(data.folder, "info_json.rds"))){
@@ -88,11 +105,8 @@ source(file.path(code.folder, "code_2_features_time_related.R"))
 rm(list = "temp")
 
 
-########## 4. DATA PARTITIONING
 
-# Extract last 10 observations for each user, if possible
-# Will move rare users completely to the test set
-#data.full[data.full[dataset == "train", list(index = head(.I, 10)), by = user_id]$index, dataset := "test"]
+########## 5. DATA PARTITIONING
 
 # testing set: last 3 first_flow songs per user (if available)
 # training set: all remaining songs 
@@ -102,7 +116,8 @@ data.full[dataset == "test_candidate", dataset := "train"]
 table(data.full$dataset)
 
 
-########## 5. CREATING FEATURES ON PARTITIONED DATA
+
+########## 6. CREATING FEATURES ON PARTITIONED DATA
 
 ### Compute total plays and skips as features
 source(file.path(code.folder, "code_2_features_total_plays.R"))
@@ -113,7 +128,8 @@ source(file.path(code.folder, "code_2_features_naive_ratios.R"))
 rm(list = "data.train")
 
 
-########## 6. EXPORTING DATA
+
+########## 7. TRANSFORMING IDs 
 
 # Drop non-FLow songs from the training data [OPTIONAL]
 data.full <- data.full[dataset != "train" | listen_type == 1, ]
@@ -127,13 +143,19 @@ idCols <- c("user_id", "artist_id", "media_id", "genre_id", "album_id", "context
 data.full[, (idCols) := lapply(.SD, createEmbeddingID, trainIdx = trainIdx), .SDcols = idCols]
 
 # Remove everything not needed for estimation 
-data.full[, c("ts_listen", "release_date", "time_lag", "album_id") := NULL]
+data.full[, c("ts_listen", "release_date", "time_lag") := NULL]
 
 # Transform factor to dummy
 factorCols <- c("platform_name", "platform_family", "hour_of_day", "weekday")
 data.full <- cbind(data.full, model.matrix(~.-1, data = data.full[, (factorCols), with=FALSE]))
 data.full[, (factorCols) := NULL]
 
-# saving the data: data_full.csv for all songs, data_flow.csv for flow songs
-#write.table(data.full, file.path(data.folder, "data_full.csv"), sep = ",", dec = ".", quote = F)
+
+
+########## 8. EXPORTING DATA
+
+# saving the data as data_flow.csv [if Flow songs are dropped]
 write.table(data.full, file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", quote = F)
+
+# saving the data as data_full.csv [if Flow songs are kept]
+#write.table(data.full, file.path(data.folder, "data_full.csv"), sep = ",", dec = ".", quote = F)

@@ -37,12 +37,9 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 data.full <- read.csv2(file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", header = T)
 
 # converting and partitioning
-data.test  <- data.full[data.full$dataset == "test",  ]
-data.unknown  <- data.full[data.full$dataset == "unknown",  ]
+data.test <- data.full[data.full$dataset == "test",  ]
+data.unknown <- data.full[data.full$dataset == "unknown",  ]
 rm(list = c("data.full"))
-
-# loading unknown data
-data.unknown$is_listened <- NA
 
 # sorting unknown data
 data.unknown$sample_id <- as.numeric(as.character(data.unknown$sample_id))
@@ -97,9 +94,9 @@ colnames(pred.matrix) <- file.list
 real <- as.factor(data.test$is_listened)
 
 # droping too weak classifiers
-aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
-good <- names(aucs)[aucs > 0.6]
-pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
+#aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
+#good <- names(aucs)[aucs > 0.6]
+#pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
 
 # extracting number of models
 k <- ncol(pred.matrix)
@@ -120,7 +117,7 @@ es.weights <- ES(X = pred.matrix[,1:k],  Y = real, iter = 100)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 
 # bagged ensemble selection
-#bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 100, bags = 10, p = 0.5)
+#bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 50, bags = 10, p = 0.5)
 #pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
 
 # computing AUC
@@ -178,4 +175,4 @@ k <- ncol(pred.matrix)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*best.weights))
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_new_25keras_13ratios.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_29_keras_only.csv")
