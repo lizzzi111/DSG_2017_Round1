@@ -16,7 +16,11 @@ data.full[,time_lag:=c(0, difftime(tail(ts_listen,-1), head(ts_listen,-1), units
 #let's take more than 20 mins as a start for a new session
 #dt[,session_id := seq_along(time_lag), by = time_lag < 20]
 data.full[, session_id := cumsum(time_lag>20)+1, by = user_id]
+# Time lag for first song in session set to 0
+data.full[time_lag > 20, time_lag := 0]
 
+# Time differences between songs for songs before last
+data.full[,c("time_lag_lag1","time_lag_lag2") :=shift(time_lag, 2, fill = 0), by = c("user_id", "session_id")]
 # Count the absolute position of the song in the session
 
 data.full[, song_session_position := 1:.N, by = c("user_id", "session_id")]
@@ -58,6 +62,8 @@ data.full[is.na(user_skip_ratio_last3)|is.nan(user_skip_ratio_last3),   user_ski
 data.full[is.na(user_skip_ratio_last5)|is.nan(user_skip_ratio_last5),   user_skip_ratio_last5  := 0.5]
 data.full[is.na(user_skip_ratio_last10)|is.nan(user_skip_ratio_last10), user_skip_ratio_last10 := 0.5]
 
+# Check if context is the same
+data.full[, context_type_same_as_lag :=  as.numeric(context_type == shift(context_type, fill = 99)), by = c("user_id", "session_id")]
 
 # Create features capturing difference of the song to the last songs
 data.full[, genre_equal_last_song := as.numeric(genre_id == shift(genre_id, fill = 0)), by = user_id]

@@ -48,6 +48,9 @@ data.train$sample_id  <- NA
 data.test$dataset <- "unknown"
 data.train$dataset <- "train"
 data.full <- rbind(data.train, data.test)
+# Assign a unique index to every observation that we have
+data.full[, row_index := 1:nrow(data.full)]
+
 setkey(data.full, user_id, media_id)
 rm(list = c("data.test",  "data.train"))
 
