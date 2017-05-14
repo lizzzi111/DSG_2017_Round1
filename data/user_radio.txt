@@ -5,7 +5,7 @@ user_id,time_add,title,total
 7280,1456757214,Klassik,1
 1985,1447511087,Candlelight-Dinner,1
 2262,1221192813,Heavy Metal,1
-941,1245228884,Reggae, Ska & Dub,1
+941,1245228884,Reggae & Ska & Dub,1
 7977,1227447028,Soul,3
 7977,1232316620,Disco,3
 7977,1234835676,Reprises - Covers,3
@@ -17,7 +17,7 @@ user_id,time_add,title,total
 134,1230143736,Pop,5
 134,1238672665,Musique de Film,5
 134,1231337628,Hits,5
-134,1230143720,Reggae, Ska & Dub,5
+134,1230143720,Reggae & Ska & Dub,5
 2318,1288708651,Rap,3
 2318,1288708634,R&B,3
 2318,1288708797,Urban Style,3
@@ -52,7 +52,7 @@ user_id,time_add,title,total
 5,1324477780,Pop,7
 5,1337858939,Melty,7
 2667,1267456969,Rock,1
-145,1304876099,Reggae, Ska & Dub,1
+145,1304876099,Reggae & Ska & Dub,1
 2769,1284812646,Französische Chansons,2
 2769,1462895571,Poprock,2
 8,1234168035,Rock,3
@@ -68,16 +68,16 @@ user_id,time_add,title,total
 7809,1239438180,Classic Rock,1
 1286,1296938769,Electro,3
 1286,1296938549,Trip hop,3
-1286,1230112896,Reggae, Ska & Dub,3
+1286,1230112896,Reggae & Ska & Dub,3
 1362,1209974257,Funk,2
 1362,1210055979,Disco,2
 1201,1264431263,Hits,1
 6545,1466660043,Disney,2
 6545,1461841374,Roadtrip,2
-63,1230118692,Reggae, Ska & Dub,1
+63,1230118692,Reggae & Ska & Dub,1
 6197,1301864948,Classic Rock,3
 6197,1298648947,Blues,3
-6197,1298648930,Reggae, Ska & Dub,3
+6197,1298648930,Reggae & Ska & Dub,3
 1402,1221410874,Indie Pop,2
 1402,1221132447,Soul,2
 4471,1492696237,Dance,1
@@ -86,7 +86,7 @@ user_id,time_add,title,total
 5311,1294528479,Rap,1
 16120,1215369926,Soul,2
 16120,1216489574,R&B,2
-3646,1245185812,Reggae, Ska & Dub,1
+3646,1245185812,Reggae & Ska & Dub,1
 4890,1221658939,Rock,4
 4890,1221661299,Indie Pop,4
 4890,1224414914,Musique de Film,4
@@ -123,7 +123,7 @@ user_id,time_add,title,total
 6347,1262558960,Dancefloor,3
 6347,1262549879,Hits,3
 6347,1227468280,Charts,3
-3405,1237500653,Reggae, Ska & Dub,2
+3405,1237500653,Reggae & Ska & Dub,2
 4684,1246990751,Rock,2
 4684,1256377343,Trip hop,2
 6392,1455898103,Hits,1
@@ -138,7 +138,7 @@ user_id,time_add,title,total
 1588,1215351108,Musique de Film,12
 1588,1215351155,Punk,12
 1588,1215351220,R&B,12
-1588,1215351171,Reggae, Ska & Dub,12
+1588,1215351171,Reggae & Ska & Dub,12
 9997,1213261700,Electro,5
 9997,1210356118,Dancefloor,5
 9997,1210382133,Soul,5
@@ -207,7 +207,7 @@ user_id,time_add,title,total
 12021,1285061828,Charts,3
 8934,1241876333,Classic Rock,3
 8934,1241875155,Trip hop,3
-8934,1241875529,Reggae, Ska & Dub,3
+8934,1241875529,Reggae & Ska & Dub,3
 13278,1247606049,Electro,1
 8113,1219609361,Electro,5
 8113,1219609400,Dancefloor,5
@@ -230,7 +230,7 @@ user_id,time_add,title,total
 5097,1222606883,Französische Chansons,3
 12988,1246988803,Französische Chansons,1
 4800,1242482164,Musique de Film,2
-4800,1242482197,Reggae, Ska & Dub,2
+4800,1242482197,Reggae & Ska & Dub,2
 2043,1235061342,Vocal Jazz,3
 2043,1235061308,Reprises - Covers,3
 2043,1241085891,Trip hop,3
@@ -347,7 +347,7 @@ user_id,time_add,title,total
 4037,1214746630,Funk,5
 4037,1214746315,Disco,5
 4037,1303556464,Hits,5
-4037,1229159945,Reggae, Ska & Dub,5
+4037,1229159945,Reggae & Ska & Dub,5
 5818,1209892090,Rock,2
 5818,1231957013,Blues,2
 9430,1226156753,Dancefloor,2
@@ -373,7 +373,7 @@ user_id,time_add,title,total
 12916,1229273546,Nouvelle Chanson,4
 12916,1229274030,Rock,4
 12916,1229273565,Französische Chansons,4
-12916,1229273920,Reggae, Ska & Dub,4
+12916,1229273920,Reggae & Ska & Dub,4
 14573,1240320249,Dancefloor,3
 14573,1220464480,Musique de Film,3
 7108,1243173440,Pop,2
@@ -398,7 +398,7 @@ user_id,time_add,title,total
 6779,1214035801,Funk,7
 6779,1237015273,Disco,7
 6779,1237015251,Blues,7
-6779,1227289060,Reggae, Ska & Dub,7
+6779,1227289060,Reggae & Ska & Dub,7
 12766,1239125931,Indie Pop,3
 12766,1238929296,Pop Folk,3
 12766,1276696640,Classique Instrumental,3
@@ -416,7 +416,7 @@ user_id,time_add,title,total
 15372,1234342047,Soul,4
 15372,1234342061,Funk,4
 15372,1235658761,Hits,4
-14428,1249861260,Reggae, Ska & Dub,1
+14428,1249861260,Reggae & Ska & Dub,1
 9808,1210579709,Rock,1
 17132,1298970012,Trip hop,2
 17132,1453982572,Roadtrip,2
@@ -425,7 +425,7 @@ user_id,time_add,title,total
 10037,1213313851,Electro,3
 10037,1213028958,Hard,3
 10037,1213034985,Heavy Metal,3
-9704,1229169275,Reggae, Ska & Dub,1
+9704,1229169275,Reggae & Ska & Dub,1
 13861,1245077048,Französische Variété ,1
 5705,1228152954,Pop,2
 5705,1224338629,Musique de Film,2
@@ -453,7 +453,7 @@ user_id,time_add,title,total
 5152,1462126954,Vor dem Kamin,1
 13050,1235231039,Dancefloor,1
 7457,1487327940,EDM,9
-7457,1487770219,Reggae,9
+7457,1487770219,Reggae &9
 7457,1462175240,Ska,9
 7457,1448373160,Hits,9
 7457,1450348670,Electro Swing,9
@@ -487,7 +487,7 @@ user_id,time_add,title,total
 16543,1260778914,Rock,1
 13495,1222259191,Musique de Film,3
 13495,1222281501,Charts,3
-13495,1222259310,Reggae, Ska & Dub,3
+13495,1222259310,Reggae & Ska & Dub,3
 17152,1214290487,Vocal Jazz,2
 17152,1214391148,Musique de Film,2
 16302,1387374355,Folk Radio UK,1
@@ -503,7 +503,7 @@ user_id,time_add,title,total
 8955,1228489700,Pop,5
 8955,1223031063,Classic Rock,5
 8955,1249209995,Rock en Seine 2014,5
-18367,1230554070,Reggae, Ska & Dub,1
+18367,1230554070,Reggae & Ska & Dub,1
 14692,1243780696,Französische Chansons,1
 13211,1220867392,Rock,1
 19685,1258462353,Hits,1
