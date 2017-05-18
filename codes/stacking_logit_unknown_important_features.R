@@ -1,5 +1,5 @@
 ### PREDCTION ON UNKNOWNs
-setwd("N:/DSG_2017/pred_unknown")
+
 
 # read in the list of important features
 # manually deleted .is_listened from the csv

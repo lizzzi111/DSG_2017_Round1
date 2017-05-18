@@ -109,5 +109,14 @@ auc(ts$real, glm_fit_imp )
 
 
 # with only important feautures = 0.7375
-
+# all features (not only flow, but also user ratios, and fulls) 0.7489
 # Regularization?
+fullmod = glm(real~., tr, family = "binomial")
+backwards = step(fullmod) 
+
+best_formula = backwards$formula
+glm_bf = glm(best_formula, tr, family = "binomial")
+glm_bf_fit = predict(glm_bf, newdata = ts, type = "response" )
+auc(ts$real, glm_bf_fit )
+
+saveRDS(best_formula, "./best_form.rds")
