@@ -1,6 +1,7 @@
 #### STACKING
 
-setwd("/Users/lizzzi111/Desktop/DSG_2017/data/")
+#setwd("/Users/lizzzi111/Desktop/DSG_2017/data/")
+setwd("N:/DSG_2017/data")
 
 # LOAD PACKAGES
 library(caret)
@@ -15,6 +16,12 @@ ts = read.csv("./ts_stacking_flow.csv")
 tr$real = factor(tr$real)
 ts$real = factor(ts$real)
 
+names(tr) = make.names(names(tr))
+names(ts) = make.names(names(ts))
+
+levels(tr$real) <- make.names(levels(factor(tr$real)))
+levels(ts$real) <- make.names(levels(factor(ts$real)))
+
 # FEATURE SELECTION RF
 # Default Parameters
 fit = randomForest(real~., tr, importance =T)
@@ -23,38 +30,72 @@ auc(ts$real, prognose[,2] )
 
 # check the importance
 imp = importance(fit)
-important_features = rownames(fit$importance[imp[,3]>25,])
+important_features = rownames(fit$importance[imp[,3]>23,])
 
+write.csv(important_features, "./important_names.csv", row.names = F)
 # rF default parameter (set.seed(1))
-# rF all 0.7294
-# rF imporance decrease > 25, auc 0.7224
-# rF imporance decrease > 30, auc 0.7203
-# 
-# just mean 0.7222
-# rF imporance decrease > 28, auc 0.7235
-# 
+# rF all 0.73
+# rF imporance decrease > 25, auc 0.7299
+# rF imporance decrease > 30, auc 0.7266
+# rF imporance decrease > 28, auc 0.7295
+# rF imporance decrease > 24, auc 0.7293
+# rF imporance decrease > 23, auc 0.7304
+# rF imporance decrease > 22, auc 0.7295
+
+
+# rF 0.7306, mtry = 3, ntrees = 1000
+
+# just mean 0.7299
+# mean of > 25 0.7297
 
 fit_imp = randomForest(real~., tr[,c("real",important_features)], importance =T)
 prognose_imp = predict(fit_imp, ts[,c(important_features)], type = "prob")
 
-auc(ts$real, as.numeric(rowMeans(ts[,-28])) )
 auc(ts$real, prognose_imp[,2] )
+auc(ts$real, as.numeric(rowMeans(ts[,-28])) )
+auc(ts$real, as.numeric(rowMeans(ts[,important_features])) )
 
-varImpPlot(fit)
+### TUNING
+tunegrid <- expand.grid(mtry=c(3:6))
+seed = 1
+set.seed(seed)
+metric = "ROC"
 
-min.model = glm(real~1, tr, family = "binomial")
-biggest <- formula(glm(real~., tr, family = "binomial"))
-fwd.model = step(min.model, direction='forward', scope=biggest)
 
-library(caretEnsemble)
-library(randomForest)
-# create submodels
-control <- trainControl(method="repeatedcv", number=10, repeats=3, savePredictions=TRUE, classProbs=TRUE)
-algorithmList <- c('rf', 'glm', 'knn', 'svmRadial')
-set.seed(1)
-full <- rbind(data,rows)
-names(full) <- make.names(names(full))
-models <- caretList(real~., data=full, trControl=control, methodList=algorithmList)
-results <- resamples(models)
-summary(results)
-dotplot(results)
+model.control<- trainControl(
+  method = "cv", # 'cv' for cross validation
+  number = 10, # number of folds in cross validation
+  #repeats = 3, # number for repeated cross validation
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  allowParallel = TRUE, # Enable parallelization if available
+  returnData = FALSE # The training data will not be included in the ouput training object
+)
+
+
+# applying
+custom <- train(real~., 
+                data=t, 
+                method="rf", 
+                ntree = 1000,
+                metric=metric, 
+                tuneGrid=tunegrid, 
+                trControl=model.control)
+summary(custom)
+plot(custom)
+#mtry 3
+pred <- predict(custom, newdata=ts, type = "prob")
+auc(ts$real, pred[,2] )
+
+rf_params_feat <- train(real~., 
+                data=tr[,c("real",important_features)], 
+                method="rf", 
+                ntree = 1000,
+                metric=metric, 
+                trControl=model.control)
+prog = predict(rf_params_feat, ts[,important_features], type="prob")
+auc(ts$real, prog[,2] )
+# Area under the curve: 0.7323 
+# it is useless to use RF, sice the simplest logistic regression gives 0.7374
+
+# Tuning logistic Regression
