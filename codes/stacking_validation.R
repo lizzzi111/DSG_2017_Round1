@@ -83,7 +83,7 @@ custom <- train(real~.,
                 trControl=model.control)
 summary(custom)
 plot(custom)
-#mtry 3
+#mtry 3, haven't tried to vary ntrees
 pred <- predict(custom, newdata=ts, type = "prob")
 auc(ts$real, pred[,2] )
 
@@ -99,3 +99,15 @@ auc(ts$real, prog[,2] )
 # it is useless to use RF, sice the simplest logistic regression gives 0.7374
 
 # Tuning logistic Regression
+# only on the important features
+
+important_features = c(read.csv("./important_names.csv"))
+important_features = levels(important_features$x)
+glm_fit = glm(real~., tr[, c("real",important_features)], family = "binomial")
+glm_fit_imp = predict(glm_fit, newdata = ts[,important_features], type = "response" )
+auc(ts$real, glm_fit_imp )
+
+
+# with only important feautures = 0.7375
+
+# Regularization?
