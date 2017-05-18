@@ -9,8 +9,10 @@ library(caretEnsemble)
 library(randomForest)
 library(pROC)
 # LOAD DATA
-tr = read.csv("./tr_stacking_flow.csv") 
-ts = read.csv("./ts_stacking_flow.csv")
+#tr = read.csv("./tr_stacking_flow.csv") 
+#ts = read.csv("./ts_stacking_flow.csv")
+tr = read.csv("./tr_stacking_all.csv") 
+ts = read.csv("./ts_stacking_all.csv")
 
 # DATA PREPARATION
 tr$real = factor(tr$real)
@@ -19,8 +21,10 @@ ts$real = factor(ts$real)
 names(tr) = make.names(names(tr))
 names(ts) = make.names(names(ts))
 
-levels(tr$real) <- make.names(levels(factor(tr$real)))
-levels(ts$real) <- make.names(levels(factor(ts$real)))
+#levels(tr$real) <- make.names(levels(factor(tr$real)))
+#levels(ts$real) <- make.names(levels(factor(ts$real)))
+
+#prop.table(table(tr$real))
 
 # FEATURE SELECTION RF
 # Default Parameters
@@ -115,7 +119,7 @@ fullmod = glm(real~., tr, family = "binomial")
 backwards = step(fullmod) 
 
 best_formula = backwards$formula
-glm_bf = glm(best_formula, tr, family = "binomial")
+glm_bf = glm(fullmod, tr, family = "binomial")
 glm_bf_fit = predict(glm_bf, newdata = ts, type = "response" )
 auc(ts$real, glm_bf_fit )
 
