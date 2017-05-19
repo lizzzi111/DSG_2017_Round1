@@ -31,5 +31,13 @@ unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response" )
 
 #write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_stepwise.csv", row.names = F)
 # leaderbord  	0.66792, validation 0.7485
-write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_stepwise_all.csv", row.names = F)
+#write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_stepwise_all.csv", row.names = F)
 # leaderboard 0.66883, val 0.7489
+#write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_factorization_all.csv", row.names = F)
+
+
+# lasso regularization
+cv.lasso <- cv.glmnet(as.matrix(full[,-57]), as.matrix(full[,57]), family='binomial', alpha=1, parallel=TRUE, standardize=TRUE, type.measure='auc')
+unknown_for_lasso =  unknown[,names(unknown)%in%names(full)]
+unknown$is_listened = predict(cv.lasso, newx = as.matrix(unknown_for_lasso), type = "response" )
+write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_factorization_all_lasso.csv", row.names = F)

@@ -24,3 +24,5 @@ write.csv(ts, "../data/ts_stacking_flow.csv", row.names = F)
 write.csv(tr, "../data/tr_stacking_all.csv", row.names = F)
 write.csv(ts, "../data/ts_stacking_all.csv", row.names = F)
 
+write.csv(tr, "../data/tr_stacking_with_factorization.csv", row.names = F)
+write.csv(ts, "../data/ts_stacking_with_factorization.csv", row.names = F)
