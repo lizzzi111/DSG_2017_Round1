@@ -11,8 +11,11 @@ library(pROC)
 # LOAD DATA
 #tr = read.csv("./tr_stacking_flow.csv") 
 #ts = read.csv("./ts_stacking_flow.csv")
-tr = read.csv("./tr_stacking_all.csv") 
-ts = read.csv("./ts_stacking_all.csv")
+#tr = read.csv("./tr_stacking_all.csv") 
+#ts = read.csv("./ts_stacking_all.csv")
+
+tr = read.csv("./tr_stacking_with_factorization.csv") 
+ts = read.csv("./ts_stacking_with_factorization.csv")
 
 # DATA PREPARATION
 tr$real = factor(tr$real)
@@ -34,7 +37,7 @@ auc(ts$real, prognose[,2] )
 
 # check the importance
 imp = importance(fit)
-important_features = rownames(fit$importance[imp[,3]>23,])
+important_features = rownames(fit$importance[imp[,3]>22,])
 
 write.csv(important_features, "./important_names.csv", row.names = F)
 # rF default parameter (set.seed(1))
@@ -56,7 +59,7 @@ fit_imp = randomForest(real~., tr[,c("real",important_features)], importance =T)
 prognose_imp = predict(fit_imp, ts[,c(important_features)], type = "prob")
 
 auc(ts$real, prognose_imp[,2] )
-auc(ts$real, as.numeric(rowMeans(ts[,-28])) )
+auc(ts$real, as.numeric(rowMeans(ts[,-57])) )
 auc(ts$real, as.numeric(rowMeans(ts[,important_features])) )
 
 ### TUNING
@@ -114,13 +117,39 @@ auc(ts$real, glm_fit_imp )
 
 # with only important feautures = 0.7375
 # all features (not only flow, but also user ratios, and fulls) 0.7489
+# all features with factorization 0.7608
 # Regularization?
-fullmod = glm(real~., tr, family = "binomial")
+fullmod = glm(real~., tr[, c("real", important_features)], family = "binomial")
 backwards = step(fullmod) 
 
 best_formula = backwards$formula
-glm_bf = glm(fullmod, tr, family = "binomial")
-glm_bf_fit = predict(glm_bf, newdata = ts, type = "response" )
+glm_bf = glm(best_formula, tr, family = "binomial")
+glm_bf_fit = predict(fullmod, newdata = ts, type = "response" )
 auc(ts$real, glm_bf_fit )
 
-saveRDS(best_formula, "./best_form.rds")
+saveRDS(best_formula, "./best_form_factorization.rds")
+
+
+### with regularization
+library(glmnet)
+
+
+# Fitting the model (Ridge: Alpha = 0)
+set.seed(1)
+cv.ridge <- cv.glmnet(as.matrix(tr[,-57]), as.matrix(tr[,57]), family='binomial', alpha=0, parallel=TRUE, standardize=TRUE, type.measure='auc')
+
+# Results
+plot(cv.ridge)
+cv.ridge$lambda.min
+cv.ridge$lambda.1se
+coef(cv.ridge, s=cv.ridge$lambda.min)
+
+ridge_fit = predict(cv.ridge, newx = as.matrix(ts[,-57]), type = "response" )
+pROC::auc(ts$real, as.numeric(ridge_fit) )
+# ridge: 0.7564
+
+cv.lasso <- cv.glmnet(as.matrix(tr[,-57]), as.matrix(tr[,57]), family='binomial', alpha=1, parallel=TRUE, standardize=TRUE, type.measure='auc')
+lasso_fit = predict(cv.lasso, newx = as.matrix(ts[,-57]), type = "response" )
+pROC::auc(ts$real, as.numeric(lasso_fit) )
+# lasso: 0.7581
+plot(cv.lasso)
