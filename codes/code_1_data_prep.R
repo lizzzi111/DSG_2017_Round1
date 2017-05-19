@@ -77,12 +77,6 @@ data.full <- merge(data.full, artist.data[, .(user_id, artist_id, favorite_artis
                    by = c("user_id", "artist_id"), all.x = TRUE, all.y = FALSE)
 data.full[is.na(favorite_artist), favorite_artist := 0]
 
-setnames(artist.data, "nb_fans", "artist_nb_fans")
-data.full <- merge(data.full, artist.data[!duplicated(artist_id), .(artist_id, artist_nb_fans)],
-                   by = c("artist_id"), all.x = TRUE, all.y = FALSE)
-# Assume that artists without info have 0 fans
-data.full[is.na(artist_nb_fans), artist_nb_fans := 0]
-
 ## adding data on albums
 album.data  <- fread(file.path(data.folder, "user_favourite_albums.txt"), sep = ",", dec = ".", header = T)
 album.data[, favorite_album := 1]
@@ -159,7 +153,7 @@ rm(list = "data.train")
 ########## 7. TRANSFORMING IDs 
 
 # Drop non-FLow songs from the training data [OPTIONAL]
-data.full <- data.full[dataset != "train" | listen_type == 1, ]
+#data.full <- data.full[dataset != "train" | listen_type == 1, ]
 
 # Make nice IDs for embedding
 # Note that rare IDs are replaced and all original ID info dropped 
@@ -177,18 +171,38 @@ factorCols <- c("platform_name", "platform_family", "hour_of_day", "weekday")
 data.full <- cbind(data.full, model.matrix(~.-1, data = data.full[, (factorCols), with=FALSE]))
 data.full[, (factorCols) := NULL]
 
-# Import user and song bias from simple recommender
-user_bias <- fread(file.path(data.folder, "user_bias_recommender0514.csv"))
+########### IMPORTING KERAS EMBEDDINGS
+# Import user and song bias from simple recommender (dot product of embeddings with added bias)
+user_bias <- fread(file.path(data.folder, "user_bias_recommender0519.csv"))
 data.full <- merge(data.full, user_bias, by.x = "user_id", by.y = "V1", all.x = TRUE, all.y = FALSE)
 
-song_bias <- fread(file.path(data.folder, "song_bias_recommender0514.csv"))
+song_bias <- fread(file.path(data.folder, "song_bias_recommender0519.csv"))
 data.full <- merge(data.full, song_bias, by.x = "media_id", by.y = "V1", all.x = TRUE, all.y = FALSE)
 
+# Import and prepare user and song embeddings
+n_embeddings <- 50
+user_embeddings <- fread(file.path(data.folder, "user_embeddings_recommender0519.csv"), header = TRUE, check.names = TRUE)
+song_embeddings <- fread(file.path(data.folder, "song_embeddings_recommender0519.csv"), header = TRUE, check.names = TRUE)
+temp <- merge(data.full[, .(user_id, media_id)], user_embeddings, by.x = "user_id", by.y = "V1", all.x = TRUE)
+temp <- merge(temp, song_embeddings, by.x = "media_id", by.y = "V1", all.x = TRUE)
+embDiffMatrix <- as.matrix(temp[,3:(n_embeddings+2), with=FALSE]) - as.matrix(temp[,(n_embeddings+3):(2*n_embeddings+2), with=FALSE])
+data.full[, meanDistUserSongEmbeddings := rowMeans(embDiffMatrix)]
+data.full[, maxDistUserSongEmbeddings := apply(embDiffMatrix, 1, max)]
+# Calculate the first 5 principal components of the difference matrix
+embDiffMatrix_pca <- prcomp(embDiffMatrix, center = T, scale. = T, tol = 0)
+data.full[, paste0("pcaDistUserSongEmbeddings", 1:5) := lapply(1:5, function(i) embDiffMatrix_pca$x[,i])]
+# Calculate principal components of the original embeddings matrices for users and songs
+user_embeddings_pca <- data.table(user_embeddings$V1, prcomp(user_embeddings, center = T, scale. = T, tol = 0)$x[,1:5])
+setnames(user_embeddings_pca, c('user_id', paste0("userEmbPCA", 1:5)))
+data.full <- merge(data.full, user_embeddings_pca, by = "user_id")
+song_embeddings_pca <- data.table(song_embeddings$V1, prcomp(song_embeddings, center = T, scale. = T, tol = 0)$x[,1:6])
+setnames(user_embeddings_pca, c('media_id', paste0("userEmbPCA", 1:6)))
+data.full <- merge(data.full, song_embeddings_pca, by = "media_id")
 
 ########## 8. EXPORTING DATA
 
 # saving the data as data_flow.csv [if Flow songs are dropped]
-fwrite(data.full, file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", quote = F)
+#fwrite(data.full, file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", quote = F)
 
 # saving the data as data_full.csv [if Flow songs are kept]
-#write.table(data.full, file.path(data.folder, "data_full.csv"), sep = ",", dec = ".", quote = F)
+fwrite(data.full, file.path(data.folder, "data_full.csv"), sep = ",", dec = ".", quote = F)
