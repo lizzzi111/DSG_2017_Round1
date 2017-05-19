@@ -21,6 +21,7 @@ ts = read.csv("./ts_stacking_with_factorization.csv")
 tr$real = factor(tr$real)
 ts$real = factor(ts$real)
 
+# aucs = sapply(ts[,-57], function(x) pROC::auc(ts$real, x ))
 names(tr) = make.names(names(tr))
 names(ts) = make.names(names(ts))
 

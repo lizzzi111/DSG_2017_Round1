@@ -23,7 +23,7 @@ real = read.csv("./data/known_test_rows.csv")
 full$real = real$is_listened
 
 # LOAD GLM FORMULA
-bf = readRDS("./data/best_form.rds")
+#bf = readRDS("./data/best_form.rds")
 # LOGIT
 #glm_fit = glm(bf., full, family = "binomial")
 glm_fit = glm(real~., full, family = "binomial")
@@ -33,7 +33,7 @@ unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response" )
 # leaderbord  	0.66792, validation 0.7485
 #write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_stepwise_all.csv", row.names = F)
 # leaderboard 0.66883, val 0.7489
-#write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_factorization_all.csv", row.names = F)
+#write.csv(unknown[,c("sample_id", "is_listened")], "./pred_unknown/stacking_glm_4_factorization.csv", row.names = F)
 
 
 # lasso regularization
