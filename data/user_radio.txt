@@ -1,4 +1,4 @@
-user_id,time_add,title,total
+user_id,time_add,radio,total
 3231,1262082431,Dancefloor,1
 669,1280342366,Französische Chansons,2
 669,1303050873,Hits,2
@@ -453,7 +453,7 @@ user_id,time_add,title,total
 5152,1462126954,Vor dem Kamin,1
 13050,1235231039,Dancefloor,1
 7457,1487327940,EDM,9
-7457,1487770219,Reggae &9
+7457,1487770219,Reggae & Ska & Dub,9
 7457,1462175240,Ska,9
 7457,1448373160,Hits,9
 7457,1450348670,Electro Swing,9

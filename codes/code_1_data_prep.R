@@ -9,8 +9,8 @@ rm(list = ls())
 
 # setting work directory
 # work.folder <- "N:/DSG2017/DSG_2017/"
-work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
-setwd(work.folder)
+#work.folder <- "/Users/Kozodoi/Documents/Competitions/DSG_2017"
+#setwd(work.folder)
 
 # setting inner folders
 code.folder <- "codes"
@@ -65,15 +65,42 @@ api.data <- api.data[!duplicated(api.data),]
 colnames(api.data) <- c("media_id", "song_rank", "song_bpm", "song_position", "song_lyrics_explicit", "song_gain", "album_id", "album_fans")
 data.full <- merge(data.full, api.data[,.(media_id, song_rank, song_bpm, song_position, song_lyrics_explicit, song_gain, album_fans)], 
                    by = "media_id", all.x = T, all.y = F)
+# A good improvement would be to impute based on median in genre_id
+for (var in c("song_rank", "song_bpm", "song_position", "song_lyrics_explicit", "song_gain", "album_fans")) {                                                                                                                                            
+  set(data.full, which(is.na(data.full[[var]])), var, median(data.full[[var]], na.rm=T))                                                                                              
+} 
 
-# adding data on artists
+## adding data on artists
 artist.data <- fread(file.path(data.folder, "user_artists.txt"), sep = ",", dec = ".", header = T)
+artist.data[, favorite_artist := 1]
+data.full <- merge(data.full, artist.data[, .(user_id, artist_id, favorite_artist)],
+                   by = c("user_id", "artist_id"), all.x = TRUE, all.y = FALSE)
+data.full[is.na(favorite_artist), favorite_artist := 0]
 
-# adding data on albums
+setnames(artist.data, "nb_fans", "artist_nb_fans")
+data.full <- merge(data.full, artist.data[!duplicated(artist_id), .(artist_id, artist_nb_fans)],
+                   by = c("artist_id"), all.x = TRUE, all.y = FALSE)
+# Assume that artists without info have 0 fans
+data.full[is.na(artist_nb_fans), artist_nb_fans := 0]
+
+## adding data on albums
 album.data  <- fread(file.path(data.folder, "user_favourite_albums.txt"), sep = ",", dec = ".", header = T)
+album.data[, favorite_album := 1]
+data.full <- merge(data.full, album.data[, .(user_id, album_id, favorite_album)],
+                   by = c("user_id", "album_id"), all.x = TRUE, all.y = FALSE)
+data.full[is.na(favorite_album), favorite_album := 0]
+
+# adding data on radio/categories
+radio.data <- fread(file.path(data.folder, "user_radio.txt"), sep = ",", dec = ".", header = T)
+#radio.data[, radio := factor(make.names(radio))]
+#radio.data <- cbind(radio.data$user_id, model.matrix(~-1 radio, data = radio.data))
+radio.data[, radio_selecter := .N, by = user_id]
+data.full <- merge(data.full, radio.data[!duplicated(user_id), .(user_id, radio_selecter)],
+                   by = c("user_id"), all.x = TRUE, all.y = FALSE)
+data.full[is.na(radio_selecter), radio_selecter := 0]
 
 # removing API data from memory
-rm(list = c("api.data", "artist.data", "album.data"))
+rm(list = c("api.data", "artist.data", "album.data", "radio.data"))
 
 
 
@@ -150,12 +177,18 @@ factorCols <- c("platform_name", "platform_family", "hour_of_day", "weekday")
 data.full <- cbind(data.full, model.matrix(~.-1, data = data.full[, (factorCols), with=FALSE]))
 data.full[, (factorCols) := NULL]
 
+# Import user and song bias from simple recommender
+user_bias <- fread(file.path(data.folder, "user_bias_recommender0514.csv"))
+data.full <- merge(data.full, user_bias, by.x = "user_id", by.y = "V1", all.x = TRUE, all.y = FALSE)
+
+song_bias <- fread(file.path(data.folder, "song_bias_recommender0514.csv"))
+data.full <- merge(data.full, song_bias, by.x = "media_id", by.y = "V1", all.x = TRUE, all.y = FALSE)
 
 
 ########## 8. EXPORTING DATA
 
 # saving the data as data_flow.csv [if Flow songs are dropped]
-write.table(data.full, file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", quote = F)
+fwrite(data.full, file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", quote = F)
 
 # saving the data as data_full.csv [if Flow songs are kept]
 #write.table(data.full, file.path(data.folder, "data_full.csv"), sep = ",", dec = ".", quote = F)
