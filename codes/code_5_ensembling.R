@@ -94,9 +94,9 @@ colnames(pred.matrix) <- file.list
 real <- as.factor(data.test$is_listened)
 
 # droping too weak classifiers
-#aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
-#good <- names(aucs)[aucs > 0.6]
-#pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
+aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
+good <- names(aucs)[aucs > 0.7]
+pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
 
 # extracting number of models
 k <- ncol(pred.matrix)
@@ -105,15 +105,17 @@ k <- ncol(pred.matrix)
 pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
 pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
-# TOP-3 and TOP-5 mean ensemble
+# TOP-N mean ensemble
 aucs <- apply(pred.matrix[,1:k], 2, function(x) auc(roc(x, real)))
 top3 <- names(aucs)[order(aucs, decreasing = T)[1:3]]
 top5 <- names(aucs)[order(aucs, decreasing = T)[1:5]]
+top7 <- names(aucs)[order(aucs, decreasing = T)[1:7]]
 pred.matrix$top3 <- apply(pred.matrix[,top3], 1, mean)
 pred.matrix$top5 <- apply(pred.matrix[,top5], 1, mean)
+pred.matrix$top7 <- apply(pred.matrix[,top7], 1, mean)
 
 # ensemble selection
-es.weights <- ES(X = pred.matrix[,1:k],  Y = real, iter = 100)
+es.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 100)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 
 # bagged ensemble selection
@@ -175,4 +177,4 @@ k <- ncol(pred.matrix)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*best.weights))
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_29_keras_only.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_30keras_10factorization.csv")
