@@ -180,12 +180,11 @@ song_bias <- fread(file.path(data.folder, "song_bias_recommender0519.csv"))
 data.full <- merge(data.full, song_bias, by.x = "media_id", by.y = "V1", all.x = TRUE, all.y = FALSE)
 
 # Import and prepare user and song embeddings
-n_embeddings <- 50
-user_embeddings <- fread(file.path(data.folder, "user_embeddings_recommender0519.csv"), header = TRUE, check.names = TRUE)
-song_embeddings <- fread(file.path(data.folder, "song_embeddings_recommender0519.csv"), header = TRUE, check.names = TRUE)
-temp <- merge(data.full[, .(user_id, media_id)], user_embeddings, by.x = "user_id", by.y = "V1", all.x = TRUE)
-temp <- merge(temp, song_embeddings, by.x = "media_id", by.y = "V1", all.x = TRUE)
-embDiffMatrix <- as.matrix(temp[,3:(n_embeddings+2), with=FALSE]) - as.matrix(temp[,(n_embeddings+3):(2*n_embeddings+2), with=FALSE])
+user_embeddings <- fread(file.path(data.folder, "user_embeddings_recommender0519.csv"), header = TRUE, check.names = TRUE, col.names = c("user_id", paste0("ub", 1:50)))
+song_embeddings <- fread(file.path(data.folder, "song_embeddings_recommender0519.csv"), header = TRUE, check.names = TRUE, col.names = c("media_id", paste0("sb", 1:50)))
+temp <- merge(data.full[, .(user_id, media_id)], user_embeddings, by = "user_id", all.x = TRUE)
+temp <- merge(temp, song_embeddings, by = "media_id", all.x = TRUE)
+embDiffMatrix <- as.matrix(temp[,3:52, with=FALSE]) - as.matrix(temp[,53:102, with=FALSE])
 data.full[, meanDistUserSongEmbeddings := rowMeans(embDiffMatrix)]
 data.full[, maxDistUserSongEmbeddings := apply(embDiffMatrix, 1, max)]
 # Calculate the first 5 principal components of the difference matrix
