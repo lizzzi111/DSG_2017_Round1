@@ -40,3 +40,7 @@ data.full[is.na(album_plays),  album_plays  := 0]
 data.full[is.na(album_skips),  album_skips  := 0]
 data.full[is.na(song_plays),   song_plays   := 0]
 data.full[is.na(song_skips),   song_skips   := 0]
+
+# droping objects from memory
+rm(list = c("genre.plays", "genre.skips", "artist.plays", "artist.skips",
+            "album.plays", "album.skips", "song.plays", "song.skips"))

@@ -64,10 +64,16 @@ data.full <- merge(data.full, user.context.ratio, all.x = TRUE, sort = F, by = c
 # imputing NAs
 data.full[is.na(user_ratio_full), user_ratio_full := 0.5]
 data.full[is.na(user_ratio_flow), user_ratio_flow := user_ratio_full]
-data.full[is.na(genre_ratio),  genre_ratio  := mean(data.train$is_listened)]
-data.full[is.na(artist_ratio), artist_ratio := mean(data.train$is_listened)]
-data.full[is.na(song_ratio),   song_ratio   := mean(data.train$is_listened)]
+data.full[is.na(genre_ratio),   genre_ratio       := mean(data.train$is_listened)]
+data.full[is.na(artist_ratio),  artist_ratio      := mean(data.train$is_listened)]
+data.full[is.na(song_ratio),    song_ratio        := mean(data.train$is_listened)]
+data.full[is.na(context_ratio), context_ratio     := mean(data.train$is_listened)]
 data.full[is.na(user_genre_ratio),   user_genre_ratio   := user_ratio_full]
 data.full[is.na(user_artist_ratio),  user_artist_ratio  := user_ratio_full]
 data.full[is.na(user_song_ratio),    user_song_ratio    := user_ratio_full]
 data.full[is.na(user_context_ratio), user_context_ratio := user_ratio_full]
+
+# droping objects from memory
+rm(list = c("genre.ratio", "song.ratio", "artist.ratio", "context.ratio",
+            "user.genre.ratio", "user.song.ratio", "user.artist.ratio", "user.context.ratio",
+            "user.ratio.flow", "user.ratio.full"))
