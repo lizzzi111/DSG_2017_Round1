@@ -34,7 +34,7 @@ source(file.path(code.folder, "code_0_helper_functions.R"))
 ###################################
 
 # loading data
-data.full <- read.csv2(file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", header = T)
+data.full <- fread(file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", header = T)
 
 # converting and partitioning
 data.test <- data.full[data.full$dataset == "test",  ]
@@ -44,6 +44,7 @@ rm(list = c("data.full"))
 # sorting unknown data
 data.unknown$sample_id <- as.numeric(as.character(data.unknown$sample_id))
 data.unknown <- data.unknown[order(data.unknown$sample_id), ]
+
 
 
 ###################################
@@ -83,7 +84,6 @@ pred.matrix <- pred.matrix[, 2:ncol(pred.matrix)]
 colnames(pred.matrix) <- file.list
 
 
-
 ###################################
 #                                 #
 #     2.2. BUILDING ENSEMBLES     #
@@ -93,20 +93,20 @@ colnames(pred.matrix) <- file.list
 # extracting real values
 real <- as.factor(data.test$is_listened)
 
-# droping too weak classifiers
+# droping weak classifiers
 aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
 good <- names(aucs)[aucs > 0.7]
-pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
+pred.matrix.good <- pred.matrix[, colnames(pred.matrix) %in% good]
 
 # extracting number of models
 k <- ncol(pred.matrix)
-
+k.good <- ncol(pred.matrix.good)
+  
 # mean and median predictions
 pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
 pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
-# TOP-N mean ensemble
-aucs <- apply(pred.matrix[,1:k], 2, function(x) auc(roc(x, real)))
+# TOP-N mean ensembles
 top3 <- names(aucs)[order(aucs, decreasing = T)[1:3]]
 top5 <- names(aucs)[order(aucs, decreasing = T)[1:5]]
 top7 <- names(aucs)[order(aucs, decreasing = T)[1:7]]
@@ -114,9 +114,13 @@ pred.matrix$top3 <- apply(pred.matrix[,top3], 1, mean)
 pred.matrix$top5 <- apply(pred.matrix[,top5], 1, mean)
 pred.matrix$top7 <- apply(pred.matrix[,top7], 1, mean)
 
-# ensemble selection
-es.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 100)
-pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
+# ensemble selection: all methods
+es_all.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 100)
+pred.matrix$es_all <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es_all.weights))
+
+# ensemble selection: best methods
+es_trim.weights <- ES(X = pred.matrix.good[,1:k.good], Y = real, iter = 100)
+pred.matrix$es_trim <- apply(pred.matrix.good[,1:k.good], 1, function(x) sum(x*es_trim.weights))
 
 # bagged ensemble selection
 #bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 50, bags = 10, p = 0.5)
@@ -125,9 +129,10 @@ pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 # computing AUC
 apply(pred.matrix, 2, function(x) auc(roc(x, real)))
 
-# displaying ES weights
-names(es.weights) <- colnames(pred.matrix)[1:length(es.weights)]
-best.weights <- es.weights[es.weights > 0]
+# saving ES weights
+names(es_all.weights)  <- colnames(pred.matrix)[1:length(es_all.weights)]
+names(es_trim.weights) <- colnames(pred.matrix)[1:length(es_trim.weights)]
+best.weights <- es_all.weights[es_all.weights > 0]
 
 
 
@@ -177,4 +182,4 @@ k <- ncol(pred.matrix)
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*best.weights))
 
 # submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_30keras_10factorization.csv")
+submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_30keras_12factor_1matrix.csv")

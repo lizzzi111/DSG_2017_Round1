@@ -171,7 +171,9 @@ factorCols <- c("platform_name", "platform_family", "hour_of_day", "weekday")
 data.full <- cbind(data.full, model.matrix(~.-1, data = data.full[, (factorCols), with=FALSE]))
 data.full[, (factorCols) := NULL]
 
-########### IMPORTING KERAS EMBEDDINGS
+
+########### 8. IMPORTING KERAS EMBEDDINGS
+
 # Import user and song bias from simple recommender (dot product of embeddings with added bias)
 user_bias <- fread(file.path(data.folder, "user_bias_recommender0519.csv"))
 data.full <- merge(data.full, user_bias, by.x = "user_id", by.y = "V1", all.x = TRUE, all.y = FALSE)
@@ -187,9 +189,11 @@ temp <- merge(temp, song_embeddings, by = "media_id", all.x = TRUE)
 embDiffMatrix <- as.matrix(temp[,3:52, with=FALSE]) - as.matrix(temp[,53:102, with=FALSE])
 data.full[, meanDistUserSongEmbeddings := rowMeans(embDiffMatrix)]
 data.full[, maxDistUserSongEmbeddings := apply(embDiffMatrix, 1, max)]
+
 # Calculate the first 5 principal components of the difference matrix
 embDiffMatrix_pca <- prcomp(embDiffMatrix, center = T, scale. = T, tol = 0)
 data.full[, paste0("pcaDistUserSongEmbeddings", 1:5) := lapply(1:5, function(i) embDiffMatrix_pca$x[,i])]
+
 # Calculate principal components of the original embeddings matrices for users and songs
 user_embeddings_pca <- data.table(user_embeddings$user_id, prcomp(user_embeddings, center = T, scale. = T, tol = 0)$x[,1:5])
 setnames(user_embeddings_pca, c('user_id', paste0("userEmbPCA", 1:5)))
@@ -198,7 +202,8 @@ song_embeddings_pca <- data.table(song_embeddings$media_id, prcomp(song_embeddin
 setnames(song_embeddings_pca, c('media_id', paste0("songEmbPCA", 1:6)))
 data.full <- merge(data.full, song_embeddings_pca, by = "media_id")
 
-########## 8. EXPORTING DATA
+
+########## 9. EXPORTING DATA
 
 # saving the data as data_flow.csv [if Flow songs are dropped]
 #fwrite(data.full, file.path(data.folder, "data_flow.csv"), sep = ",", dec = ".", quote = F)
