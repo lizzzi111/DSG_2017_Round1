@@ -50,13 +50,13 @@ data.full[, weekday := factor(weekdays(ts_listen, abbreviate = TRUE))]
 data.full[, release_year := year(release_date)]
 
 # Create a lagged is_listened (for the previous song)
-data.full[, c("is_listened_lag1", "is_listened_lag2") :=  shift(is_listened, 1:2), by = user_id]
+#data.full[, c("is_listened_lag1", "is_listened_lag2") :=  shift(is_listened, 1:2), by = user_id]
 data.full[, c("user_skip_ratio_last3")  := rowMeans(mapply(cbind, shift(is_listened, 1:3)),  na.rm = TRUE), by = user_id]
 data.full[, c("user_skip_ratio_last5")  := rowMeans(mapply(cbind, shift(is_listened, 1:5)),  na.rm = TRUE), by = user_id]
 data.full[, c("user_skip_ratio_last10") := rowMeans(mapply(cbind, shift(is_listened, 1:10)), na.rm = TRUE), by = user_id]
 #data.full[, is_listened_lag :=  as.numeric(is_listened_lag)-1]
-data.full[is.na(is_listened_lag1), is_listened_lag1 := 0]
-data.full[is.na(is_listened_lag2), is_listened_lag2 := 0]
+#data.full[is.na(is_listened_lag1), is_listened_lag1 := 0]
+#data.full[is.na(is_listened_lag2), is_listened_lag2 := 0]
 data.full[song_session_position == 1, c("is_listened_lag1", "is_listened_lag2") := 0] # user to be := 'none', but that changes the column to character
 data.full[is.na(user_skip_ratio_last3)|is.nan(user_skip_ratio_last3),   user_skip_ratio_last3  := 0.5]
 data.full[is.na(user_skip_ratio_last5)|is.nan(user_skip_ratio_last5),   user_skip_ratio_last5  := 0.5]

@@ -191,11 +191,11 @@ data.full[, maxDistUserSongEmbeddings := apply(embDiffMatrix, 1, max)]
 embDiffMatrix_pca <- prcomp(embDiffMatrix, center = T, scale. = T, tol = 0)
 data.full[, paste0("pcaDistUserSongEmbeddings", 1:5) := lapply(1:5, function(i) embDiffMatrix_pca$x[,i])]
 # Calculate principal components of the original embeddings matrices for users and songs
-user_embeddings_pca <- data.table(user_embeddings$V1, prcomp(user_embeddings, center = T, scale. = T, tol = 0)$x[,1:5])
+user_embeddings_pca <- data.table(user_embeddings$user_id, prcomp(user_embeddings, center = T, scale. = T, tol = 0)$x[,1:5])
 setnames(user_embeddings_pca, c('user_id', paste0("userEmbPCA", 1:5)))
 data.full <- merge(data.full, user_embeddings_pca, by = "user_id")
-song_embeddings_pca <- data.table(song_embeddings$V1, prcomp(song_embeddings, center = T, scale. = T, tol = 0)$x[,1:6])
-setnames(user_embeddings_pca, c('media_id', paste0("userEmbPCA", 1:6)))
+song_embeddings_pca <- data.table(song_embeddings$media_id, prcomp(song_embeddings, center = T, scale. = T, tol = 0)$x[,1:6])
+setnames(song_embeddings_pca, c('media_id', paste0("songEmbPCA", 1:6)))
 data.full <- merge(data.full, song_embeddings_pca, by = "media_id")
 
 ########## 8. EXPORTING DATA
