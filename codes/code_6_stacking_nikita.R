@@ -88,7 +88,7 @@ m1 <- list()
 m2 <- list()
 
 # finding corelations > threshold
-threshold <- 0.99
+threshold <- 0.93
 for (i in 1:nrow(cors)) {
   for (j in 1:nrow(cors)) {
     if (cors[i,j] > threshold) {
@@ -127,9 +127,9 @@ pred_valid = predict(glm_fit, newdata = full, type = "response" )
 auc(roc(pred_valid, as.factor(full$real)))
 
 # correlation with the best submission
-best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim_allothers_drop099.csv"))$is_listened
+best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim_allothers_drop095.csv"))$is_listened
 unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response")
 cor(unknown$is_listened, best.sub)
 
 # saving submission
-write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim_allothers_drop099.csv", row.names = F)
+write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim_allothers_drop093.csv", row.names = F)
