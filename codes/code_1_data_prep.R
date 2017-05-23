@@ -65,6 +65,7 @@ api.data <- api.data[!duplicated(api.data),]
 colnames(api.data) <- c("media_id", "song_rank", "song_bpm", "song_position", "song_lyrics_explicit", "song_gain", "album_id", "album_fans")
 data.full <- merge(data.full, api.data[,.(media_id, song_rank, song_bpm, song_position, song_lyrics_explicit, song_gain, album_fans)], 
                    by = "media_id", all.x = T, all.y = F)
+data[, song_lyrics_explicit := as.numeric(song_lyrics_explicit)]
 # A good improvement would be to impute based on median in genre_id
 for (var in c("song_rank", "song_bpm", "song_position", "song_lyrics_explicit", "song_gain", "album_fans")) {                                                                                                                                            
   set(data.full, which(is.na(data.full[[var]])), var, median(data.full[[var]], na.rm=T))                                                                                              
@@ -187,6 +188,7 @@ song_embeddings <- fread(file.path(data.folder, "song_embeddings_recommender0519
 temp <- merge(data.full[, .(user_id, media_id)], user_embeddings, by = "user_id", all.x = TRUE)
 temp <- merge(temp, song_embeddings, by = "media_id", all.x = TRUE)
 embDiffMatrix <- as.matrix(temp[,3:52, with=FALSE]) - as.matrix(temp[,53:102, with=FALSE])
+data.full[, sumDistUserSongEmbeddings := rowSums(embDiffMatrix)]
 data.full[, meanDistUserSongEmbeddings := rowMeans(embDiffMatrix)]
 data.full[, maxDistUserSongEmbeddings := apply(embDiffMatrix, 1, max)]
 
