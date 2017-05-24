@@ -61,7 +61,7 @@ xg.model <- xgb.train(data = xg.tr,
                       watchlist = list(trainset = xg.tr, testset = xg.ts),
                       nrounds = 500, 
                       params = list(booster = "gbtree", eta = 0.3, gamma = 0, max_depth = 6, min_child_weight = 1, subsample = 0.1, colsample_by_tree = 0.7, 
-                                    num_parallel_tree = 3, objective = 'binary:logistic', eval_metric = "auc"),
+                                    num_parallel_tree = 3,  objective = 'binary:logistic', eval_metric = "auc"), 
                       verbose = 1, early_stopping_rounds = 4)
 
 ggplot(xg.model$evaluation_log, aes(iter)) + geom_line(aes(y=trainset_auc)) + geom_line(aes(y= testset_auc))
