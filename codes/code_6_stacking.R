@@ -45,6 +45,7 @@ rm(list = c("data.full"))
 # 2) The model set which is currently the best
 temp <- list.files("./pred_unknown/")
 temp <- readRDS("./data/best_stacking_model_set.rds")
+temp[36] <- "similarity_scores_flow_25000k.csv"
 
 # loading predictions (unknown)
 unknown = as.data.frame(sapply(temp, function(file) read.csv(paste0("./pred_unknown/",file))[2]))
@@ -127,9 +128,9 @@ pred_valid = predict(glm_fit, newdata = full, type = "response" )
 auc(roc(pred_valid, as.factor(full$real)))
 
 # correlation with the best submission
-best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim_allothers_drop095.csv"))$is_listened
+best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim25_allothers_drop093.csv"))$is_listened
 unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response")
 cor(unknown$is_listened, best.sub)
 
 # saving submission
-write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim_allothers_drop093.csv", row.names = F)
+write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim25_allothers_drop093.csv", row.names = F)

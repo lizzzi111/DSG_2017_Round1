@@ -62,14 +62,14 @@ xg.model <- xgb.train(data = xg.tr,
                       nrounds = 500, 
                       params = list(booster = "gbtree", eta = 0.3, gamma = 0, max_depth = 6, min_child_weight = 1, subsample = 0.1, colsample_by_tree = 0.7, 
                                     num_parallel_tree = 3,  objective = 'binary:logistic', eval_metric = "auc"), 
-                      verbose = 1, early_stopping_rounds = 4)
+                      verbose = 1, early_stopping_rounds = 10)
 
 ggplot(xg.model$evaluation_log, aes(iter)) + geom_line(aes(y=trainset_auc)) + geom_line(aes(y= testset_auc))
 
 xg.pred <- predict(xg.model, xg.ts)
 # saving predictions
 xg <- data.frame(row_index = data.ts$row_index, is_listened = xg.pred)
-write.table(xg, file = file.path("pred_valid", "xg_full_features_eta015_0523.csv"), quote = F, sep = ",", dec = ".")
+write.table(xg, file = file.path("pred_valid", "xg_full_features_eta03_0524.csv"), quote = F, sep = ",", dec = ".")
 
 
 ########## 5. MODELING
@@ -81,7 +81,8 @@ write.table(xg, file = file.path("pred_valid", "xg_full_features_eta015_0523.csv
 # predicting
 xg.pred <- predict(xg.model, newdata = xg.unknown)
 xg <-  data.frame(sample_id = data.unknown$sample_id, is_listened = xg.pred)
+setorder(xg, sample_id)
 
 # creating submission
-write.table(xg, file = file.path("pred_unknown", "xg_full_features_eta015_0523.csv"), quote = F, sep = ",", dec = ".", row.names = FALSE)
+write.table(xg, file = file.path("pred_unknown", "xg_full_features_eta03_0524.csv"), quote = F, sep = ",", dec = ".", row.names = FALSE)
 submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_full_features_0523.csv")
