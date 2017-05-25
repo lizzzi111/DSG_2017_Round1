@@ -61,6 +61,7 @@ data.unknown <- data.unknown[order(data.unknown$sample_id), ]
 
 # getting the list of files
 file.list <- list.files("pred_valid")
+file.list <- readRDS("./data/best_stacking_model_set.rds")
 preds <- list()
 
 # loading all predictions
@@ -70,6 +71,12 @@ for (i in 1:length(file.list)) {
   #preds[[i]]$row_index <- as.numeric(as.character(preds[[i]]$row_index))
   #preds[[i]] <- preds[[i]][order(preds[[i]]$row_index), ]
 }
+
+# sorting the new predictions
+#preds[[63]] <- merge(preds[[61]], preds[[63]], by = "row_index", sort = F)
+#preds[[63]] <- preds[[63]][, c("row_index", "is_listened.y")]
+#colnames(preds[[63]]) <- c("row_index", "is_listened")
+#write.csv(preds[[63]], "./pred_valid/xg_full_features_eta03_0524.csv", row.names = F)
 
 # creating preddiction matrix
 pred.matrix <- data.frame(dataset = data.test$dataset)
@@ -83,30 +90,80 @@ for (i in 1:length(file.list)) {
 pred.matrix <- pred.matrix[, 2:ncol(pred.matrix)]
 colnames(pred.matrix) <- file.list
 
-
-###################################
-#                                 #
-#     2.2. BUILDING ENSEMBLES     #
-#                                 #
-###################################
-
 # extracting real values
 real <- as.factor(data.test$is_listened)
 
-# droping weak classifiers
+
+#######################################
+#                                     #
+#   2.2. REMOVING CORRELATED MODELS   #
+#                                     #
+#######################################
+
+# computing correlations
+cors <- cor(pred.matrix)
+
+# setting matrix to triangle form
+for (i in 1:nrow(cors)) {
+  for (j in 1:nrow(cors)) {
+    if (i >= j) {cors[i,j] <- 0}
+  }
+}
+
+# creating objects
+t <- 1
+m1 <- list()
+m2 <- list()
+
+# finding corelations > threshold
+threshold <- 0.93
+for (i in 1:nrow(cors)) {
+  for (j in 1:nrow(cors)) {
+    if (cors[i,j] > threshold) {
+      m1[[t]] <- rownames(cors)[i]
+      m2[[t]] <- colnames(cors)[j]
+      t <- t + 1
+    }
+  }
+}
+
+# computing AUC on validation
 aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
-good <- names(aucs)[aucs > 0.7]
-pred.matrix.good <- pred.matrix[, colnames(pred.matrix) %in% good]
+
+# selecting correlated models with lower AUC
+bad <- list()
+for (t in 1:length(m1)) {
+  au <- c(aucs[m1[[t]]], aucs[m2[[t]]])
+  bad[[t]] <- names(which.min(au))
+}
+
+# removing correlated models with lower AUC
+pred.matrix <- pred.matrix[, !(colnames(pred.matrix) %in% unique(bad))]
+
+# saving the list of models
+good.models <- colnames(pred.matrix)
+
+
+###################################
+#                                 #
+#     2.3. BUILDING ENSEMBLES     #
+#                                 #
+###################################
+
+# droping weak classifiers
+#aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
+#good <- names(aucs)[aucs > 0.7]
+#pred.matrix <- pred.matrix[, colnames(pred.matrix) %in% good]
 
 # extracting number of models
 k <- ncol(pred.matrix)
-k.good <- ncol(pred.matrix.good)
-  
+
 # mean and median predictions
 pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
 pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
 
 # TOP-N mean ensembles
+aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
 top3 <- names(aucs)[order(aucs, decreasing = T)[1:3]]
 top5 <- names(aucs)[order(aucs, decreasing = T)[1:5]]
 top7 <- names(aucs)[order(aucs, decreasing = T)[1:7]]
@@ -114,25 +171,18 @@ pred.matrix$top3 <- apply(pred.matrix[,top3], 1, mean)
 pred.matrix$top5 <- apply(pred.matrix[,top5], 1, mean)
 pred.matrix$top7 <- apply(pred.matrix[,top7], 1, mean)
 
-# ensemble selection: all methods
-es_all.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 100)
-pred.matrix$es_all <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es_all.weights))
-
-# ensemble selection: best methods
-es_trim.weights <- ES(X = pred.matrix.good[,1:k.good], Y = real, iter = 100)
-pred.matrix$es_trim <- apply(pred.matrix.good[,1:k.good], 1, function(x) sum(x*es_trim.weights))
+# ensemble selection
+es.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 1000)
+names(es.weights) <- colnames(pred.matrix)[1:length(es.weights)]
+pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 
 # bagged ensemble selection
 #bes.weights <- BES(X = pred.matrix[,1:k], Y = real, iter = 50, bags = 10, p = 0.5)
 #pred.matrix$bag_es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*bes.weights))
 
 # computing AUC
-apply(pred.matrix, 2, function(x) auc(roc(x, real)))
-
-# saving ES weights
-names(es_all.weights)  <- colnames(pred.matrix)[1:length(es_all.weights)]
-names(es_trim.weights) <- colnames(pred.matrix)[1:length(es_trim.weights)]
-best.weights <- es_all.weights[es_all.weights > 0]
+aucs <- apply(pred.matrix, 2, function(x) auc(roc(x, real)))
+aucs
 
 
 
@@ -149,9 +199,9 @@ best.weights <- es_all.weights[es_all.weights > 0]
 ###################################
 
 # loading all predictions
-for (i in 1:length(best.weights)) {
-  print(file.path("Loading ", names(best.weights)[i]))
-  preds[[i]] <- read.csv2(file.path("pred_unknown", names(best.weights)[i]), sep = ",", dec = ".", header = T)
+for (i in 1:length(good.models)) {
+  print(file.path("Loading ", good.models[i]))
+  preds[[i]] <- read.csv2(file.path("pred_unknown", good.models[i]), sep = ",", dec = ".", header = T)
   preds[[i]]$sample_id <- as.numeric(as.character(preds[[i]]$sample_id))
   preds[[i]] <- preds[[i]][order(preds[[i]]$sample_id), ]
 }
@@ -160,13 +210,13 @@ for (i in 1:length(best.weights)) {
 pred.matrix <- data.frame(sample_id = data.unknown$sample_id)
 
 # merging all predictions
-for (i in 1:length(best.weights)) {
+for (i in 1:length(good.models)) {
   pred.matrix <- cbind(pred.matrix, preds[[i]]$is_listened)
 }
 
 # assigning colnames
 pred.matrix <- pred.matrix[, 2:ncol(pred.matrix)]
-colnames(pred.matrix) <- names(best.weights)
+colnames(pred.matrix) <- names(es.weights)
 
 
 ###################################
@@ -179,7 +229,12 @@ colnames(pred.matrix) <- names(best.weights)
 k <- ncol(pred.matrix)
 
 # ensemble selection
-pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*best.weights))
+pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 
-# submitting the best method (ES)
-submit(pred.matrix$es, data = data.unknown, folder = subm.folder, file = "es_30keras_12factor_1matrix.csv")
+# computing correlation with the best submission
+best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim25_allothers_drop093.csv"))$is_listened
+aucs
+cor(pred.matrix$es, best.sub)
+
+# exporting submissions
+submit(pred.matrix$es,   data = data.unknown, folder = subm.folder, file = "es_1000i_2factors_1sim25_allothers_drop093.csv")

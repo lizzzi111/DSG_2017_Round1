@@ -20,7 +20,7 @@ subm.folder <- "submissions"
 # loading libraries
 if(require(pacman)==FALSE) install.packages("pacman")
 library(pacman)
-p_load(data.table, AUC, anytime, beepr, compiler)
+p_load(data.table, AUC, anytime, beepr, caret, compiler, randomForest, nnet)
 
 # loading functions
 source(file.path(code.folder, "code_0_helper_functions.R"))
@@ -44,8 +44,8 @@ rm(list = c("data.full"))
 # 1) All models which are listed in the folders
 # 2) The model set which is currently the best
 temp <- list.files("./pred_unknown/")
-temp <- readRDS("./data/best_stacking_model_set.rds")
-temp[36] <- "similarity_scores_flow_25000k.csv"
+temp <- readRDS("./data/best_stacking_model_set_0525.rds")
+#temp[45] <- "xg_full_features_eta03_0524.csv"
 
 # loading predictions (unknown)
 unknown = as.data.frame(sapply(temp, function(file) read.csv(paste0("./pred_unknown/",file))[2]))
@@ -65,7 +65,6 @@ colnames(unknown) <- gsub(".is_listened", "", colnames(unknown))
 ###################################
 #                                 #
 #  3. REMOVING CORRELATED MODELS  #
-#  [optional, but seems to work]  #
 #                                 #
 ###################################
 
@@ -77,9 +76,7 @@ cors <- cors[  !(rownames(cors) %in% "real"), ]
 # setting matrix to triangle form
 for (i in 1:nrow(cors)) {
   for (j in 1:nrow(cors)) {
-    if (i >= j) {
-      cors[i,j] <- 0
-    }
+    if (i >= j) {cors[i,j] <- 0}
   }
 }
 
@@ -116,21 +113,54 @@ full <- full[, !(colnames(full) %in% unique(bad))]
 
 ###################################
 #                                 #
-#           4. STACKING           #
+#       4. STACKING: STAGE 1      #
+#                                 #
+###################################
+
+# converting to factor
+full$real = as.factor(full$rea)
+
+# preparations
+iter <- 10
+a <- rep(NA, iter)
+
+# validation loop
+for (t in 1:iter) {
+
+  # data partitioning
+  part <- createDataPartition(full$real, p = 0.6, list = F)
+  full.train <- full[ part, ]
+  full.valid <- full[-part, ]
+  
+  # training GLM
+  glm_fit = glm(real ~ ., full.train, family = "binomial")
+  glm_pred = predict(glm_fit, newdata = full.valid, type = "response")
+  
+  # saving AUC
+  a[t] <- auc(roc(glm_pred, full.valid$real))
+}
+
+
+###################################
+#                                 #
+#      5. STACKING: STAGE 2       #
 #                                 #
 ###################################
 
 # training GLM
-glm_fit = glm(real~., full, family = "binomial")
+glm_fit = glm(real ~ ., full, family = "binomial")
 
-# AUC on validation
-pred_valid = predict(glm_fit, newdata = full, type = "response" )
-auc(roc(pred_valid, as.factor(full$real)))
+# predicting
+glm_pred = predict(glm_fit, newdata = full, type = "response")
+unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response")
+
+# displaying AUCs
+print(paste0("AUC on Validation = ", round(auc(roc(glm_pred, full$real)), digits = 6)))
+print(paste0("Out-of-sample AUC = ", round(mean(a), digits = 6)))
 
 # correlation with the best submission
-best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim25_allothers_drop093.csv"))$is_listened
-unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response")
-cor(unknown$is_listened, best.sub)
+best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim25_1xgbold_11ratios_drop093.csv"))$is_listened
+print(paste0("Correlation with the best submission = ", round(cor(unknown$is_listened, best.sub), digits = 6)))
 
 # saving submission
-write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim25_allothers_drop093.csv", row.names = F)
+write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim25_1xgbold_11ratios_drop093.csv", row.names = F)
