@@ -20,15 +20,16 @@ subm.folder <- "submissions"
 # loading libraries
 if(require(pacman)==FALSE) install.packages("pacman")
 library(pacman)
-p_load(data.table, AUC, anytime, beepr, caret, compiler, randomForest, nnet)
+p_load(data.table, AUC, beepr, caret, e1071)
 
 # loading functions
 source(file.path(code.folder, "code_0_helper_functions.R"))
 
 
+
 ###################################
 #                                 #
-#      2. LOADING PREDICTIONS     #
+#      1. LOADING PREDICTIONS     #
 #                                 #
 ###################################
 
@@ -43,9 +44,8 @@ rm(list = c("data.full"))
 # there are two options for that:
 # 1) All models which are listed in the folders
 # 2) The model set which is currently the best
-temp <- list.files("./pred_unknown/")
+temp <- list.files("./pred_valid/")
 temp <- readRDS("./data/best_stacking_model_set_0525.rds")
-#temp[45] <- "xg_full_features_eta03_0524.csv"
 
 # loading predictions (unknown)
 unknown = as.data.frame(sapply(temp, function(file) read.csv(paste0("./pred_unknown/",file))[2]))
@@ -62,9 +62,10 @@ colnames(full)    <- gsub(".is_listened", "", colnames(full))
 colnames(unknown) <- gsub(".is_listened", "", colnames(unknown))
 
 
+
 ###################################
 #                                 #
-#  3. REMOVING CORRELATED MODELS  #
+#  2. REMOVING CORRELATED MODELS  #
 #                                 #
 ###################################
 
@@ -110,57 +111,91 @@ for (t in 1:length(m1)) {
 # removing correlated models with lower AUC
 full <- full[, !(colnames(full) %in% unique(bad))]
 
-
-###################################
-#                                 #
-#       4. STACKING: STAGE 1      #
-#                                 #
-###################################
-
 # converting to factor
-full$real = as.factor(full$rea)
+full$real = as.factor(full$real)
+
+
+
+###################################
+#                                 #
+#       3. STACKING: STAGE 1      #
+#                                 #
+###################################
 
 # preparations
-iter <- 10
-a <- rep(NA, iter)
+iter <- 100
+perf <- matrix(NA, nrow = 101, ncol = iter)
+weig <- seq(0, 1, by = 0.01)
+rownames(perf) <- weig
 
 # validation loop
 for (t in 1:iter) {
-
+  
+  # print iteration number
+  print(paste0("Iteration ", t, "/", iter))
+  
   # data partitioning
-  part <- createDataPartition(full$real, p = 0.6, list = F)
+  part <- createDataPartition(full$real, p = 0.7, list = F)
   full.train <- full[ part, ]
   full.valid <- full[-part, ]
   
-  # training GLM
-  glm_fit = glm(real ~ ., full.train, family = "binomial")
-  glm_pred = predict(glm_fit, newdata = full.valid, type = "response")
+  # training models
+  glm_fit <- glm(real ~ ., full.train, family = "binomial")
+  svm_fit <- svm(real ~ ., full.train, probability = T, kernel = "radial")
   
-  # saving AUC
-  a[t] <- auc(roc(glm_pred, full.valid$real))
+  # predicting
+  glm_pred <- predict(glm_fit, newdata = full.valid, type = "response")
+  svm_pred <- attr(predict(svm_fit, newdata = full.valid, probability = T), "probabilities")[,"1"]
+  
+  # saving AUCs
+  for (i in 1:101) {
+    ensemble <- weig[i]*glm_pred + (1 - weig[i])*svm_pred
+    perf[i, t] <- auc(roc(ensemble, full.valid$real))
+  }
 }
+
+# finding the optial weight
+perf <- apply(perf, 1, mean)
+weight <- as.numeric(names(which.max(perf)))
+weight
+
 
 
 ###################################
 #                                 #
-#      5. STACKING: STAGE 2       #
+#      4. STACKING: STAGE 2       #
 #                                 #
 ###################################
 
 # training GLM
 glm_fit = glm(real ~ ., full, family = "binomial")
 
-# predicting
-glm_pred = predict(glm_fit, newdata = full, type = "response")
-unknown$is_listened = predict(glm_fit, newdata = unknown, type = "response")
+# training SVM
+svm_fit <- svm(real ~ ., data = full, probability = T, kernel = "radial")
+
+# predicting validation
+glm_pred_valid  = predict(glm_fit, newdata = full, type = "response")
+svm_pred_valid  = attr(predict(svm_fit, newdata = full, probability = T), "probabilities")[,"1"]
+ens_pred_valid  = weight*glm_pred_valid + (1-weight)*svm_pred_valid
+
+# predicting unknown
+glm_pred_unknown  = predict(glm_fit, newdata = unknown, type = "response")
+svm_pred_unknown  = attr(predict(svm_fit, newdata = unknown, probability = T), "probabilities")[,"1"]
+ens_pred_unknown  = weight*glm_pred_unknown + (1-weight)*svm_pred_unknown
 
 # displaying AUCs
-print(paste0("AUC on Validation = ", round(auc(roc(glm_pred, full$real)), digits = 6)))
-print(paste0("Out-of-sample AUC = ", round(mean(a), digits = 6)))
+#print(paste0("GLM: AUC on Validation = ",      round(auc(roc(glm_pred_valid, full$real)), digits = 6)))
+#print(paste0("SVM: AUC on Validation = ",      round(auc(roc(svm_pred_valid, full$real)), digits = 6)))
+#print(paste0("ENSEMBLE: AUC on Validation = ", round(auc(roc(ens_pred_valid, full$real)), digits = 6)))
+
+# displaying AUCs
+print(perf)
 
 # correlation with the best submission
-best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim25_1xgbold_11ratios_drop093.csv"))$is_listened
-print(paste0("Correlation with the best submission = ", round(cor(unknown$is_listened, best.sub), digits = 6)))
+best.sub <- read.csv(paste0("./submissions/stacking_mean2_2factors_1sim25_allothers_drop093.csv"))$is_listened
+print(paste0("Correlation with the best submission = ", round(cor(ens_pred_unknown, best.sub), digits = 6)))
+print(paste0("Mean out-of-sample AUC = ", round(max(perf), digits = 6)))
 
 # saving submission
-write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_glm_2factors_1sim25_1xgbold_11ratios_drop093.csv", row.names = F)
+unknown$is_listened <- ens_pred_unknown
+write.csv(unknown[,c("sample_id", "is_listened")], "./submissions/stacking_ens_2factors_1sim25_allothers_drop093.csv", row.names = F)

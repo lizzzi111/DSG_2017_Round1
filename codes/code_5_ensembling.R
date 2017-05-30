@@ -61,7 +61,7 @@ data.unknown <- data.unknown[order(data.unknown$sample_id), ]
 
 # getting the list of files
 file.list <- list.files("pred_valid")
-file.list <- readRDS("./data/best_stacking_model_set.rds")
+#file.list <- readRDS("./data/best_stacking_model_set_0525.rds")
 preds <- list()
 
 # loading all predictions
@@ -116,7 +116,7 @@ m1 <- list()
 m2 <- list()
 
 # finding corelations > threshold
-threshold <- 0.93
+threshold <- 0.99
 for (i in 1:nrow(cors)) {
   for (j in 1:nrow(cors)) {
     if (cors[i,j] > threshold) {
@@ -172,7 +172,7 @@ pred.matrix$top5 <- apply(pred.matrix[,top5], 1, mean)
 pred.matrix$top7 <- apply(pred.matrix[,top7], 1, mean)
 
 # ensemble selection
-es.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 1000)
+es.weights <- ES(X = pred.matrix[,1:k], Y = real, iter = 100)
 names(es.weights) <- colnames(pred.matrix)[1:length(es.weights)]
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 
@@ -216,7 +216,7 @@ for (i in 1:length(good.models)) {
 
 # assigning colnames
 pred.matrix <- pred.matrix[, 2:ncol(pred.matrix)]
-colnames(pred.matrix) <- names(es.weights)
+colnames(pred.matrix) <- good.models
 
 
 ###################################
@@ -228,13 +228,21 @@ colnames(pred.matrix) <- names(es.weights)
 # extracting number of models
 k <- ncol(pred.matrix)
 
+# mean and median predictions
+pred.matrix$mean   <- apply(pred.matrix[,1:k], 1, mean)
+pred.matrix$median <- apply(pred.matrix[,1:k], 1, median)
+
+# TOP-N mean ensembles
+pred.matrix$top3 <- apply(pred.matrix[,top3], 1, mean)
+pred.matrix$top5 <- apply(pred.matrix[,top5], 1, mean)
+pred.matrix$top7 <- apply(pred.matrix[,top7], 1, mean)
+
 # ensemble selection
 pred.matrix$es <- apply(pred.matrix[,1:k], 1, function(x) sum(x*es.weights))
 
 # computing correlation with the best submission
-best.sub <- read.csv(paste0("./submissions/stacking_glm_2factors_1sim25_allothers_drop093.csv"))$is_listened
-aucs
-cor(pred.matrix$es, best.sub)
+best.sub <- read.csv(paste0("./submissions/stacking_mean2_2factors_1sim25_allothers_drop093.csv"))$is_listened
+cor(pred.matrix$mean, best.sub)
 
 # exporting submissions
-submit(pred.matrix$es,   data = data.unknown, folder = subm.folder, file = "es_1000i_2factors_1sim25_allothers_drop093.csv")
+submit(pred.matrix$mean, data = data.unknown, folder = subm.folder, file = "mean_all_models_drop099.csv")
