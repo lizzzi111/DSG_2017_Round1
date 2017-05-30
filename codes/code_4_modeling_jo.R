@@ -43,6 +43,7 @@ data.ts <- data.full[dataset == "test"]
 data.tr[, dataset := NULL]
 data.ts[, dataset := NULL]
 
+
 ###################################
 #                                 #
 #      MODELING FOR VALIDATION    #
@@ -72,11 +73,7 @@ xg <- data.frame(row_index = data.ts$row_index, is_listened = xg.pred)
 write.table(xg, file = file.path("pred_valid", "xg_full_features_eta03_0524.csv"), quote = F, sep = ",", dec = ".")
 
 
-########## 5. MODELING
-
-
-
-######### 6. FORECASTING
+######### FORECASTING
 
 # predicting
 xg.pred <- predict(xg.model, newdata = xg.unknown)
@@ -84,5 +81,4 @@ xg <-  data.frame(sample_id = data.unknown$sample_id, is_listened = xg.pred)
 setorder(xg, sample_id)
 
 # creating submission
-write.table(xg, file = file.path("pred_unknown", "xg_full_features_eta03_0524.csv"), quote = F, sep = ",", dec = ".", row.names = FALSE)
-submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_full_features_0523.csv")
+submit(xg.pred, data = data.unknown, folder = "pred_unknown", file = "xg_basic_all_features.csv")
