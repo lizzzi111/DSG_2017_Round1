@@ -19,7 +19,7 @@ func.folder <- "functions"
 subm.folder <- "submissions"
 
 # loading libraries
-if(require(pacman)==FALSE) install.packages("pacman")
+if(require(pacman) == FALSE) install.packages("pacman")
 library(pacman)
 p_load(data.table, anytime)
 
@@ -59,7 +59,7 @@ rm(list = c("data.test",  "data.train"))
 ########## 2. ADDING API DATA
 
 # adding data on songs
-api.data <- fread(file.path(data.folder, "api_final.txt"), sep = ",", dec = ".", header = T)
+api.data <- fread(file.path(data.folder, "result_track.txt"), sep = ",", dec = ".", header = T)
 api.data[fans == -1, fans := 0]
 api.data <- api.data[!duplicated(api.data),]
 colnames(api.data) <- c("media_id", "song_rank", "song_bpm", "song_position", "song_lyrics_explicit", "song_gain", "album_id", "album_fans")
@@ -72,30 +72,21 @@ for (var in c("song_rank", "song_bpm", "song_position", "song_lyrics_explicit", 
 } 
 
 ## adding data on artists
-artist.data <- fread(file.path(data.folder, "user_artists.txt"), sep = ",", dec = ".", header = T)
+artist.data <- fread(file.path(data.folder, "result_artist.txt"), sep = ",", dec = ".", header = T)
 artist.data[, favorite_artist := 1]
 data.full <- merge(data.full, artist.data[, .(user_id, artist_id, favorite_artist)],
                    by = c("user_id", "artist_id"), all.x = TRUE, all.y = FALSE)
 data.full[is.na(favorite_artist), favorite_artist := 0]
 
 ## adding data on albums
-album.data  <- fread(file.path(data.folder, "user_favourite_albums.txt"), sep = ",", dec = ".", header = T)
+album.data  <- fread(file.path(data.folder, "result_album.txt"), sep = ",", dec = ".", header = T)
 album.data[, favorite_album := 1]
 data.full <- merge(data.full, album.data[, .(user_id, album_id, favorite_album)],
                    by = c("user_id", "album_id"), all.x = TRUE, all.y = FALSE)
 data.full[is.na(favorite_album), favorite_album := 0]
 
-# adding data on radio/categories
-radio.data <- fread(file.path(data.folder, "user_radio.txt"), sep = ",", dec = ".", header = T)
-#radio.data[, radio := factor(make.names(radio))]
-#radio.data <- cbind(radio.data$user_id, model.matrix(~-1 radio, data = radio.data))
-radio.data[, radio_selecter := .N, by = user_id]
-data.full <- merge(data.full, radio.data[!duplicated(user_id), .(user_id, radio_selecter)],
-                   by = c("user_id"), all.x = TRUE, all.y = FALSE)
-data.full[is.na(radio_selecter), radio_selecter := 0]
-
 # removing API data from memory
-rm(list = c("api.data", "artist.data", "album.data", "radio.data"))
+rm(list = c("api.data", "artist.data", "album.data"))
 
 
 
